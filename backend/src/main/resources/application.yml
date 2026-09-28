@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: campus-notices
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/campus_notices}
+    username: ${DB_USER:campus}
+    password: ${DB_PASSWORD:campus}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+crawler:
+  enabled: ${CRAWLER_ENABLED:true}
+  # Ajou's main notice board (all offices). robots.txt allows /kr/ajou/; /oia- pages are excluded.
+  list-url: https://www.ajou.ac.kr/kr/ajou/notice.do
+  source: ajou-main
+  interval: PT15M
+  initial-delay: PT10S
+  # Pause between any two requests to the university server.
+  request-delay: PT1S
+  # How far back to go when a page has only unknown notices (first run / backfill).
+  max-pages: 5
+  user-agent: "CampusNotices/0.1 (student project; English notice digest)"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,18 @@
+# Gradle / Java
+backend/.gradle/
+backend/build/
+*.class
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Local config and secrets
+.env
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
