@@ -6,7 +6,7 @@ University announcements (course withdrawal deadlines, scholarships, dorm and jo
 the school website and written in Korean. Campus Notices collects them automatically, gives each one an English
 title and summary, and emails you when a notice matches the keywords you follow.
 
-> Status: week 1 of 4. The crawler and the notice API work; summaries, the web app and alerts are next.
+> Status: week 2 of 4. The crawler, the notice API and the web app work; English summaries and alerts are next.
 
 ## Architecture
 
@@ -39,13 +39,24 @@ React (Vite + TypeScript)  ──REST──►  Spring Boot 4 (Java 21)
 | GET | `/api/notices/categories` | Categories in use |
 | GET | `/actuator/health` | Health check |
 
+## Web app
+
+React 19 + TypeScript (Vite), TanStack Query and React Router, styled with Tailwind.
+
+- Notice list with title search (debounced), category filters with English names, and paging. Search, category and
+  page live in the URL, so any view can be bookmarked or shared.
+- Notice page with attachments, a link to the original, and the notice body. Bodies are HTML from the university
+  site: sanitized on the server (jsoup) and again in the browser (DOMPurify) before rendering.
+- Loading, empty and error states; light and dark themes; Korean text wraps between words.
+
 ## Running locally
 
-Requirements: Java 21, Docker.
+Requirements: Java 21, Node 20+, Docker.
 
 ```bash
-docker compose up -d            # PostgreSQL on localhost:5432
-cd backend && ./gradlew bootRun # API on http://localhost:8080, first crawl after 10 s
+docker compose up -d              # PostgreSQL on localhost:5432
+cd backend && ./gradlew bootRun   # API on http://localhost:8080, first crawl after 10 s
+cd frontend && npm install && npm run dev   # web app on http://localhost:5173 (proxies /api to :8080)
 ```
 
 Set `CRAWLER_ENABLED=false` to run the API without crawling.

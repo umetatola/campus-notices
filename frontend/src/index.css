@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+
+/* Color tokens: light by default, dark when the OS asks for it. */
+:root {
+  --bg: #f5f7f9;
+  --surface: #ffffff;
+  --ink: #16202c;
+  --ink-2: #4b5768;
+  --muted: #6e7887;
+  --line: #e2e6eb;
+  --accent: #0e6b63;
+  --accent-soft: #e3f1ef;
+  --pin: #9a4a06;
+  --pin-soft: #fdf1e2;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141a;
+    --surface: #171d25;
+    --ink: #e7ecf2;
+    --ink-2: #b1bbc7;
+    --muted: #8591a0;
+    --line: #26303b;
+    --accent: #56bfb2;
+    --accent-soft: #15302d;
+    --pin: #f0b061;
+    --pin-soft: #33271a;
+    color-scheme: dark;
+  }
+}
+
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-pin: var(--pin);
+  --color-pin-soft: var(--pin-soft);
+  --font-sans: 'IBM Plex Sans KR', system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* Korean: wrap between words, not inside them; still break long URLs */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* Notice bodies are HTML from the university site (sanitized twice: on the server and with DOMPurify). */
+.notice-body {
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.notice-body p {
+  margin: 0 0 0.75em;
+}
+.notice-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.5em 0;
+}
+.notice-body a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.notice-body table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+}
+.notice-body td,
+.notice-body th {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+}
+.notice-body ul,
+.notice-body ol {
+  padding-left: 1.4em;
+  margin: 0 0 0.75em;
+  list-style: revert;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
