@@ -11,7 +11,7 @@ create table notices (
     body_html         text,
     body_text         text,
     -- sha-256 of title + body text; a change means the notice was edited
-    content_hash      char(64)     not null,
+    content_hash      varchar(64)  not null,
     first_seen_at     timestamptz  not null default now(),
     updated_at        timestamptz  not null default now(),
     constraint uq_notice_source_article unique (source, source_article_id)
