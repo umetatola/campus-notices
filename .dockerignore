@@ -1,0 +1,8 @@
+# Keep the Docker build context small and free of secrets
+.git
+.env
+**/node_modules
+**/dist
+backend/build
+backend/.gradle
+**/*.log
