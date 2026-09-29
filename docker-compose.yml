@@ -15,5 +15,12 @@ services:
       interval: 5s
       retries: 10
 
+  # Catches every email the app sends in development. Inbox: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   pgdata:

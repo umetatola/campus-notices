@@ -6,7 +6,7 @@ University announcements (course withdrawal deadlines, scholarships, dorm and jo
 the school website and written in Korean. Campus Notices collects them automatically, gives each one an English
 title and summary, and emails you when a notice matches the keywords you follow.
 
-> Status: week 2 of 4. Crawler, notice API, web app and the English-summary pipeline work; keyword alerts are next.
+> Status: week 3 of 4. Crawler, notice API, web app, English summaries, sign-in and keyword alerts work; deployment is next.
 
 ## Architecture
 
@@ -14,8 +14,8 @@ title and summary, and emails you when a notice matches the keywords you follow.
 React (Vite + TypeScript)  ──REST──►  Spring Boot 4 (Java 21)
                                        ├─ crawler     scheduled, polite (Jsoup)
                                        ├─ summarizer  PostgreSQL job queue → Claude
-                                       ├─ alerts      keyword matching → email   (week 3)
-                                       └─ api         notices, search, users
+                                       ├─ alerts      keyword matching → email digest
+                                       └─ api         notices, search, sign-in, keywords (Spring Security)
                                                 │
                                           PostgreSQL (Flyway migrations)
 ```
@@ -46,6 +46,21 @@ written by Claude from the Korean original (structured output, so the reply alwa
   notices simply stay queued and are summarized once a key is added. `stub` writes clearly fake summaries for UI
   work, and a real summarizer re-queues them on startup.
 
+### Sign-in and alerts
+
+- **Passwordless sign-in.** Students enter their email and get a one-time link (15 minutes). Only the token's SHA-256
+  hash is stored; one `UPDATE … RETURNING` marks it used, so it can't be used twice. The endpoint answers the same
+  way for every address and allows 3 links per address per 15 minutes. Sign-in creates a new session id (no
+  session fixation); the session cookie is HttpOnly and SameSite=Lax, and every write needs the CSRF token
+  (Spring Security's SPA setup: `XSRF-TOKEN` cookie → `X-XSRF-TOKEN` header).
+- **Keywords.** Up to 20 per user, case-insensitive and unique per user.
+- **Matching.** Each new notice is checked once, after its English summary is ready (or after 30 minutes), against
+  the Korean title and body and the English title and summary. A keyword only matches notices first seen after it
+  was followed, so nobody is flooded with old news.
+- **Delivery.** Matches go to an outbox table whose primary key (user, notice) rules out duplicates. One email per
+  user lists all new matches. Each user's rows are locked while their email is sent; failed sends are retried up to
+  5 times. Delivery is at-least-once.
+
 ## API
 
 | Method | Path | Description |
@@ -53,6 +68,12 @@ written by Claude from the Korean original (structured output, so the reply alwa
 | GET | `/api/notices?q=&category=&page=&size=` | Notices, newest first, with English title and deadline; `q` searches Korean and English text |
 | GET | `/api/notices/{id}` | One notice with body, attachments and its English summary |
 | GET | `/api/notices/categories` | Categories in use |
+| POST | `/api/auth/request-link` | Email a sign-in link (always 202) |
+| POST | `/api/auth/verify` | Exchange a link token for a session |
+| POST | `/api/auth/logout` | Sign out |
+| GET | `/api/me` | The signed-in user (401 when signed out) |
+| GET/POST | `/api/subscriptions` | List or follow keywords (signed in) |
+| DELETE | `/api/subscriptions/{id}` | Stop following a keyword |
 | GET | `/actuator/health` | Health check |
 
 ## Web app
@@ -71,7 +92,7 @@ React 19 + TypeScript (Vite), TanStack Query and React Router, styled with Tailw
 Requirements: Java 21, Node 20+, Docker.
 
 ```bash
-docker compose up -d              # PostgreSQL on localhost:5432
+docker compose up -d              # PostgreSQL on :5432, Mailpit (dev inbox) on http://localhost:8025
 cd backend && ./gradlew bootRun   # API on http://localhost:8080, first crawl after 10 s
 cd frontend && npm install && npm run dev   # web app on http://localhost:5173 (proxies /api to :8080)
 ```
