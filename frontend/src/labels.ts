@@ -26,6 +26,19 @@ export function postedLabel(isoDate: string, now = new Date()): string {
   return dateFormat.format(new Date(y, m - 1, d))
 }
 
+/** "Due today", "Due tomorrow", "Due Oct 6", or null once the date has passed. */
+export function dueLabel(isoDate: string | null, now = new Date()): string | null {
+  if (!isoDate) return null
+  const today = kstDate(now)
+  if (isoDate < today) return null
+  if (isoDate === today) return 'Due today'
+  if (isoDate === kstDate(new Date(now.getTime() + 86_400_000))) return 'Due tomorrow'
+  const [y, m, d] = isoDate.split('-').map(Number)
+  return `Due ${shortDate.format(new Date(y, m - 1, d))}`
+}
+
+const shortDate = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' })
+
 function kstDate(d: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(d) // en-CA gives yyyy-MM-dd
 }

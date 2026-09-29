@@ -2,7 +2,7 @@ import { useEffect, useEffectEvent, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
 import { fetchCategories, fetchNotices, type NoticeItem } from '../api'
-import { categoryName, postedLabel } from '../labels'
+import { categoryName, dueLabel, postedLabel } from '../labels'
 
 const PAGE_SIZE = 20
 
@@ -111,14 +111,14 @@ function SearchBox({ value, onSearch }: { value: string; onSearch: (value: strin
   return (
     <div>
       <label htmlFor="search" className="sr-only">
-        Search notice titles
+        Search notices
       </label>
       <input
         id="search"
         type="search"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Search titles, e.g. 장학 or 기숙사"
+        placeholder="Search in English or Korean, e.g. scholarship or 장학"
         className="w-full rounded-lg border border-line bg-surface px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
       />
     </div>
@@ -145,6 +145,7 @@ function CategoryChip(props: { label: string; sublabel?: string; selected: boole
 }
 
 function NoticeRow({ notice }: { notice: NoticeItem }) {
+  const due = dueLabel(notice.deadline)
   return (
     <li>
       <Link
@@ -157,14 +158,24 @@ function NoticeRow({ notice }: { notice: NoticeItem }) {
               Pinned
             </span>
           )}
-          <span className="font-medium leading-snug text-ink">{notice.title}</span>
+          <div className="min-w-0">
+            <span className="font-medium leading-snug text-ink">{notice.titleEn ?? notice.title}</span>
+            {notice.titleEn && (
+              <span lang="ko" className="mt-0.5 block text-sm leading-snug text-ink-2">
+                {notice.title}
+              </span>
+            )}
+          </div>
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+          {due && (
+            <span className="rounded bg-due-soft px-1.5 py-0.5 text-xs font-medium text-due">{due}</span>
+          )}
           <span className="text-accent">{categoryName(notice.category)}</span>
           {notice.department && (
             <>
               <span aria-hidden>·</span>
-              <span>{notice.department}</span>
+              <span lang="ko">{notice.department}</span>
             </>
           )}
           <span aria-hidden>·</span>

@@ -1,6 +1,9 @@
 spring:
   application:
     name: campus-notices
+  # Local secrets such as ANTHROPIC_API_KEY live in the project's .env file (never committed).
+  config:
+    import: "optional:file:.env[.properties],optional:file:../.env[.properties]"
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/campus_notices}
     username: ${DB_USER:campus}
@@ -24,6 +27,16 @@ crawler:
   # How far back to go when a page has only unknown notices (first run / backfill).
   max-pages: 5
   user-agent: "CampusNotices/0.1 (student project; English notice digest)"
+
+summarizer:
+  # auto: Claude when ANTHROPIC_API_KEY is set, otherwise off (notices stay queued). Also: anthropic, stub, none.
+  provider: ${SUMMARIZER_PROVIDER:auto}
+  api-key: ${ANTHROPIC_API_KEY:}
+  model: ${SUMMARIZER_MODEL:claude-opus-5}
+  fallbacks: true
+  interval: PT10S
+  batch-size: 5
+  max-attempts: 5
 
 management:
   endpoints:

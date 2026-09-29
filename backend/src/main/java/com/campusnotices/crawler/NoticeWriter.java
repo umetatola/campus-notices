@@ -4,6 +4,7 @@ import com.campusnotices.notice.Attachment;
 import com.campusnotices.notice.Notice;
 import com.campusnotices.notice.NoticeRepository;
 import com.campusnotices.notice.ScrapedNotice;
+import com.campusnotices.summary.SummaryQueue;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -16,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class NoticeWriter {
 
 	private final NoticeRepository notices;
+	private final SummaryQueue summaries;
 
-	public NoticeWriter(NoticeRepository notices) {
+	public NoticeWriter(NoticeRepository notices, SummaryQueue summaries) {
 		this.notices = notices;
+		this.summaries = summaries;
 	}
 
 	@Transactional
@@ -28,8 +31,13 @@ public class NoticeWriter {
 		}
 		Notice notice = notices.findBySourceAndSourceArticleId(source, scraped.sourceArticleId())
 				.orElseGet(() -> new Notice(source, scraped.sourceArticleId()));
-		notice.applyContent(scraped, contentHash(scraped));
-		return notices.save(notice);
+		boolean changed = notice.applyContent(scraped, contentHash(scraped));
+		Notice saved = notices.saveAndFlush(notice);
+		if (changed) {
+			// new or edited: (re)summarize this version
+			summaries.enqueue(saved.getId(), saved.getContentHash());
+		}
+		return saved;
 	}
 
 	static String contentHash(ScrapedNotice n) {

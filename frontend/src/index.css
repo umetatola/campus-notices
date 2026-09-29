@@ -12,6 +12,8 @@
   --accent-soft: #e3f1ef;
   --pin: #9a4a06;
   --pin-soft: #fdf1e2;
+  --due: #b42318;
+  --due-soft: #fdecea;
   color-scheme: light;
 }
 
@@ -27,6 +29,8 @@
     --accent-soft: #15302d;
     --pin: #f0b061;
     --pin-soft: #33271a;
+    --due: #f7907f;
+    --due-soft: #3a1d1a;
     color-scheme: dark;
   }
 }
@@ -42,6 +46,8 @@
   --color-accent-soft: var(--accent-soft);
   --color-pin: var(--pin);
   --color-pin-soft: var(--pin-soft);
+  --color-due: var(--due);
+  --color-due-soft: var(--due-soft);
   --font-sans: 'IBM Plex Sans KR', system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
 }
 

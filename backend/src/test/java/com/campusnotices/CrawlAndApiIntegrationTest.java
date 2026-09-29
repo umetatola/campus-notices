@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.campusnotices.crawler.NoticeCrawler;
 import com.campusnotices.crawler.PageFetcher;
 import com.campusnotices.notice.NoticeRepository;
+import com.campusnotices.summary.SummaryQueue;
+import com.campusnotices.summary.SummaryStatus;
+import com.campusnotices.summary.SummaryWorker;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +30,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * Crawls saved Ajou pages into a real PostgreSQL (Flyway migrations included) and reads them back
  * over HTTP. Skipped when Docker is not available.
  */
-@SpringBootTest(properties = "crawler.enabled=false")
+@SpringBootTest(properties = {"crawler.enabled=false", "summarizer.provider=stub", "summarizer.initial-delay=PT1H"})
 @AutoConfigureMockMvc
 @Testcontainers(disabledWithoutDocker = true)
 class CrawlAndApiIntegrationTest {
@@ -44,6 +47,12 @@ class CrawlAndApiIntegrationTest {
 
 	@Autowired
 	MockMvcTester mvc;
+
+	@Autowired
+	SummaryQueue queue;
+
+	@Autowired
+	SummaryWorker worker;
 
 	@Test
 	void crawlsOnceThenStopsAtKnownNotices() throws Exception {
@@ -69,6 +78,30 @@ class CrawlAndApiIntegrationTest {
 				.bodyJson().hasPathSatisfying("$", v -> v.assertThat().asArray().contains("학사"));
 
 		assertThat(mvc.get().uri("/api/notices/999999")).hasStatus(404);
+
+		// every stored notice was queued exactly once, and nothing is summarized yet
+		assertThat(queue.countByStatus(SummaryStatus.PENDING)).isEqualTo(19);
+		long id = notices.findAll().getFirst().getId();
+		assertThat(mvc.get().uri("/api/notices/" + id)).hasStatusOk()
+				.bodyJson().hasPathSatisfying("$.summary.status", v -> v.assertThat().isEqualTo("PENDING"));
+
+		// the worker takes small batches until the queue is empty
+		int runs = 0;
+		while (worker.runOnce().claimed() > 0) {
+			runs++;
+		}
+		assertThat(runs).isEqualTo(4);   // 19 notices, 5 per batch
+		assertThat(queue.countByStatus(SummaryStatus.DONE)).isEqualTo(19);
+
+		assertThat(mvc.get().uri("/api/notices/" + id)).hasStatusOk()
+				.bodyJson()
+				.hasPathSatisfying("$.summary.status", v -> v.assertThat().isEqualTo("DONE"))
+				.hasPathSatisfying("$.summary.titleEn", v -> v.assertThat().asString().startsWith("[Stub] "));
+		assertThat(mvc.get().uri("/api/notices?size=1")).hasStatusOk()
+				.bodyJson().hasPathSatisfying("$.items[0].titleEn", v -> v.assertThat().asString().startsWith("[Stub] "));
+		// search also looks at the English text
+		assertThat(mvc.get().uri("/api/notices?q={q}", "stub summary")).hasStatusOk()
+				.bodyJson().hasPathSatisfying("$.totalItems", v -> v.assertThat().isEqualTo(19));
 	}
 
 	/** Serves the saved list page, an empty second page, and detail pages (saved ones where we have them). */

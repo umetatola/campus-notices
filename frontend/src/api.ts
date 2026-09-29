@@ -9,11 +9,23 @@ export interface PageResponse<T> {
 export interface NoticeItem {
   id: number
   title: string
+  titleEn: string | null // null until the English summary is written
   category: string | null
   department: string | null
   postedOn: string // yyyy-MM-dd
+  deadline: string | null // yyyy-MM-dd
   pinned: boolean
   sourceUrl: string
+}
+
+export type SummaryStatus = 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED'
+
+export interface Summary {
+  status: SummaryStatus
+  titleEn: string | null
+  summaryEn: string | null
+  deadline: string | null
+  deadlineNote: string | null
 }
 
 export interface Attachment {
@@ -21,7 +33,8 @@ export interface Attachment {
   url: string
 }
 
-export interface NoticeDetail extends NoticeItem {
+export interface NoticeDetail extends Omit<NoticeItem, 'titleEn' | 'deadline'> {
+  summary: Summary
   bodyHtml: string | null
   bodyText: string | null
   attachments: Attachment[]

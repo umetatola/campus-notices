@@ -25,6 +25,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'org.jsoup:jsoup:1.23.2'
+	implementation 'com.anthropic:anthropic-java:2.65.0'
 	runtimeOnly 'org.postgresql:postgresql'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

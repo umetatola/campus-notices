@@ -2,8 +2,8 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router'
 import DOMPurify from 'dompurify'
-import { ApiError, fetchNotice } from '../api'
-import { categoryName, postedLabel } from '../labels'
+import { ApiError, fetchNotice, type Summary } from '../api'
+import { categoryName, dueLabel, postedLabel } from '../labels'
 import NotFoundPage from './NotFoundPage'
 
 export default function NoticeDetailPage() {
@@ -49,7 +49,18 @@ export default function NoticeDetailPage() {
       ) : (
         <>
           <header className="space-y-2">
-            <h1 className="text-2xl leading-snug font-semibold text-balance">{notice.data.title}</h1>
+            {notice.data.summary.titleEn ? (
+              <>
+                <h1 className="text-2xl leading-snug font-semibold text-balance">{notice.data.summary.titleEn}</h1>
+                <p lang="ko" className="leading-snug text-ink-2">
+                  {notice.data.title}
+                </p>
+              </>
+            ) : (
+              <h1 lang="ko" className="text-2xl leading-snug font-semibold text-balance">
+                {notice.data.title}
+              </h1>
+            )}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
               <span className="text-accent">{categoryName(notice.data.category)}</span>
               {notice.data.department && (
@@ -70,6 +81,8 @@ export default function NoticeDetailPage() {
               Open the original on ajou.ac.kr ↗
             </a>
           </header>
+
+          <SummaryCard summary={notice.data.summary} />
 
           {notice.data.attachments.length > 0 && (
             <section className="rounded-lg border border-line bg-surface p-4">
@@ -111,4 +124,48 @@ export default function NoticeDetailPage() {
       )}
     </article>
   )
+}
+
+function SummaryCard({ summary }: { summary: Summary }) {
+  if (summary.status !== 'DONE') {
+    return (
+      <p className="rounded-lg border border-dashed border-line px-4 py-3 text-sm text-ink-2">
+        {summary.status === 'FAILED'
+          ? "We couldn't write an English summary for this notice. The original is below."
+          : 'English summary coming soon. The original notice is below.'}
+      </p>
+    )
+  }
+  const due = dueLabel(summary.deadline)
+  return (
+    <section className="space-y-3 rounded-lg border border-line bg-surface p-5" aria-labelledby="summary-heading">
+      <h2 id="summary-heading" className="text-sm font-semibold tracking-wide text-accent uppercase">
+        In English
+      </h2>
+      <p className="leading-relaxed">{summary.summaryEn}</p>
+      {summary.deadline && (
+        <p className="flex flex-wrap items-center gap-2 text-sm">
+          <span
+            className={`rounded px-1.5 py-0.5 text-xs font-medium ${due ? 'bg-due-soft text-due' : 'bg-line text-ink-2'}`}
+          >
+            {due ?? 'Deadline passed'}
+          </span>
+          <span className="text-ink-2">
+            {formatDate(summary.deadline)}
+            {summary.deadlineNote && ` · ${summary.deadlineNote}`}
+          </span>
+        </p>
+      )}
+      <p className="text-xs text-muted">
+        Written by AI from the Korean notice. Check the original for official details.
+      </p>
+    </section>
+  )
+}
+
+const longDate = new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+
+function formatDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  return longDate.format(new Date(y, m - 1, d))
 }
