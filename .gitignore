@@ -9,6 +9,7 @@ frontend/dist/
 
 # Local config and secrets
 .env
+deploy/.env
 *.local
 
 # IDE

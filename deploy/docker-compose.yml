@@ -1,0 +1,61 @@
+# Production: app + PostgreSQL + Caddy (HTTPS) on one small server.
+# Settings come from deploy/.env (copy .env.example). Start with: docker compose up -d
+services:
+  app:
+    image: ghcr.io/umetatola/campus-notices:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/campus_notices
+      DB_USER: campus
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      APP_BASE_URL: https://${DOMAIN:?set DOMAIN in .env}
+      COOKIE_SECURE: "true"
+      # Caddy terminates HTTPS; trust its X-Forwarded-* headers
+      SERVER_FORWARD_HEADERS_STRATEGY: native
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_SMTP_AUTH: "true"
+      MAIL_STARTTLS: "true"
+      MAIL_FROM: ${MAIL_FROM}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # sized for a 1 GB server: small heap, simple GC
+      JAVA_TOOL_OPTIONS: -Xmx384m -XX:+UseSerialGC
+    mem_limit: 600m
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: campus_notices
+      POSTGRES_USER: campus
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U campus -d campus_notices"]
+      interval: 5s
+      retries: 10
+    mem_limit: 256m
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    mem_limit: 128m
+
+volumes:
+  pgdata:
+  caddy_data:

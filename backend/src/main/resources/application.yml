@@ -71,6 +71,10 @@ summarizer:
   max-attempts: 5
 
 management:
+  health:
+    # an SMTP outage must not mark the site as down; failed emails are retried by the outbox
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:

@@ -1,12 +1,14 @@
 # Campus Notices
 
+[![CI](https://github.com/umetatola/campus-notices/actions/workflows/ci.yml/badge.svg)](https://github.com/umetatola/campus-notices/actions/workflows/ci.yml)
+
 English digests of Ajou University notices, with keyword alerts.
 
 University announcements (course withdrawal deadlines, scholarships, dorm and job-fair notices) are spread across
 the school website and written in Korean. Campus Notices collects them automatically, gives each one an English
 title and summary, and emails you when a notice matches the keywords you follow.
 
-> Status: week 3 of 4. Crawler, notice API, web app, English summaries, sign-in and keyword alerts work; deployment is next.
+> Status: week 4 of 4. Everything works locally and in CI; the production setup is ready and waiting for a server.
 
 ## Architecture
 
@@ -107,5 +109,25 @@ cd backend && ./gradlew test
 ```
 
 - Parser tests run against pages saved from the real site (text, image-only and attachment-only notices).
-- The integration test crawls those pages into a real PostgreSQL started by Testcontainers, runs the crawl twice
-  to check it stops at known notices, and queries the HTTP API. It is skipped when Docker is not running.
+- Integration tests use a real PostgreSQL started by Testcontainers: crawling (twice, to check it stops at known
+  notices) and the HTTP API; the summary queue's edge cases (retries, giving up, edits mid-summary, expired
+  locks); and sign-in, keywords and alert emails end to end. They are skipped when Docker is not running.
+
+CI (GitHub Actions) runs the backend tests, the frontend lint and build, and the Docker build on every push and
+pull request.
+
+## Deployment
+
+The whole site is one Docker image: the React app is built first and served by Spring Boot (which also answers
+app URLs such as `/notices/12` with the app, and keeps 404s for missing files). The runtime image is an Alpine JRE
+running as a non-root user, with a health check.
+
+Every push to `main` publishes the image to GitHub's container registry. A server runs
+[`deploy/docker-compose.yml`](deploy/docker-compose.yml): the app, PostgreSQL, and Caddy, which gets and renews the
+HTTPS certificate. Memory limits fit a 1 GB machine. To deploy:
+
+```bash
+cd deploy
+cp .env.example .env     # domain, database password, SMTP account, optional Anthropic key
+docker compose up -d     # later updates: docker compose pull && docker compose up -d
+```
