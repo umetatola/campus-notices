@@ -34,3 +34,14 @@ describe('dueLabel', () => {
     expect(dueLabel(null, now)).toBeNull()
   })
 })
+
+describe('Korean labels', () => {
+  it('uses Korean words and dates', () => {
+    expect(postedLabel('2026-10-13', now, 'ko')).toBe('오늘')
+    expect(postedLabel('2026-10-12', now, 'ko')).toBe('어제')
+    expect(postedLabel('2026-10-01', now, 'ko')).toBe('2026년 10월 1일')
+    expect(dueLabel('2026-10-14', now, 'ko')).toBe('내일 마감')
+    expect(dueLabel('2026-10-20', now, 'ko')).toBe('10월 20일 마감')
+    expect(categoryName('장학', 'ko')).toBe('장학')
+  })
+})

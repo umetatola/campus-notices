@@ -100,6 +100,8 @@ React 19 + TypeScript (Vite), TanStack Query and React Router, styled with Tailw
   any view can be bookmarked or shared.
 - Notice page with the English summary and deadline (with an "Add to calendar" .ics download), attachments, a link to the original, and the notice body. Bodies are HTML from the university
   site: sanitized on the server (jsoup) and again in the browser (DOMPurify) before rendering.
+- Interface in English or Korean (한국어 / English switch in the header, remembered in the browser); in Korean the
+  original title comes first and the English one underneath, and dates read "오늘", "10월 20일 마감".
 - Loading, empty and error states; light and dark themes; Korean text wraps between words.
 
 ## Running locally
