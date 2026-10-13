@@ -132,7 +132,7 @@ class CrawlAndApiIntegrationTest {
 				.bodyJson().hasPathSatisfying("$.totalItems", v -> v.assertThat().isEqualTo(19));
 
 		// a recent notice edited on the site: the recheck fetches it again, marks it edited and re-queues the summary
-		Notice recent = writer.save("ajou", new ScrapedNotice("900001", "학사", "Recent notice", "학사팀",
+		Notice recent = writer.save("ajou-main", new ScrapedNotice("900001", "학사", "Recent notice", "학사팀",
 				LocalDate.now(ZoneId.of("Asia/Seoul")), "https://www.ajou.ac.kr/900001", false, "<p>v1</p>", "v1",
 				List.of()));
 		assertThat(recent.getEditedAt()).isNull();
