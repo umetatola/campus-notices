@@ -202,6 +202,55 @@ class AuthAndAlertsIntegrationTest {
 		assertThat(sender.sendPending(50)).isZero();
 	}
 
+	@Test
+	void oneClickUnsubscribePausesAlertsUntilTurnedBackOn() {
+		MockHttpSession session = signIn("dave@ajou.ac.kr");
+		assertThat(mvc.post().uri("/api/subscriptions").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON).content("{\"keyword\":\"zebra\"}"))
+				.hasStatus(201);
+
+		save("800101", "[행사] zebra 특강 안내", "강연");
+		mail.sent.clear();
+		matcher.matchNewNotices(100);
+		assertThat(sender.sendPending(50)).isEqualTo(1);
+		Mailer.Email first = mail.sent.getLast();
+		assertThat(first.headers()).containsEntry("List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
+		assertThat(first.text()).contains("/unsubscribe?token=");
+		Matcher m = Pattern.compile("<https?://[^>]*/api/alerts/unsubscribe\\?token=([A-Za-z0-9_-]+)>")
+				.matcher(first.headers().get("List-Unsubscribe"));
+		assertThat(m.matches()).isTrue();
+		String token = m.group(1);
+
+		// the mail app's one-click POST: no session, no CSRF token
+		assertThat(mvc.post().uri("/api/alerts/unsubscribe?token=" + token)
+				.contentType(MediaType.APPLICATION_FORM_URLENCODED).content("List-Unsubscribe=One-Click"))
+				.hasStatus(204);
+		assertThat(mvc.post().uri("/api/alerts/unsubscribe?token=" + token)).hasStatus(204); // idempotent
+		assertThat(mvc.post().uri("/api/alerts/unsubscribe?token=not-a-real-token")).hasStatus(404);
+		assertThat(mvc.get().uri("/api/alerts/status").session(session)).hasStatusOk()
+				.bodyJson().hasPathSatisfying("$.paused", v -> v.assertThat().isEqualTo(true));
+		// keywords are kept
+		assertThat(mvc.get().uri("/api/subscriptions").session(session)).hasStatusOk()
+				.bodyJson().hasPathSatisfying("$.length()", v -> v.assertThat().isEqualTo(1));
+
+		// while paused: no email, and nothing piles up for later
+		save("800102", "[행사] zebra 2차 특강", "강연");
+		matcher.matchNewNotices(100);
+		assertThat(sender.sendPending(50)).isZero();
+
+		// turning alerts back on needs the session and the CSRF token
+		assertThat(mvc.post().uri("/api/alerts/resume").session(session)).hasStatus(403);
+		assertThat(mvc.post().uri("/api/alerts/resume").session(session).with(csrf())).hasStatusOk()
+				.bodyJson().hasPathSatisfying("$.paused", v -> v.assertThat().isEqualTo(false));
+		save("800103", "[행사] zebra 3차 특강", "강연");
+		mail.sent.clear();
+		matcher.matchNewNotices(100);
+		assertThat(sender.sendPending(50)).isEqualTo(1);
+		assertThat(mail.sent.getLast().subject()).contains("zebra 3차").doesNotContain("2차");
+		// the same token keeps working in later emails
+		assertThat(mail.sent.getLast().headers().get("List-Unsubscribe")).contains(token);
+	}
+
 	private Notice save(String articleId, String title, String body) {
 		return writer.save("test", new ScrapedNotice(articleId, "장학", title, "학생지원팀", LocalDate.of(2026, 9, 29),
 				"https://example.org/" + articleId, false, "<p>" + body + "</p>", body, List.of()));

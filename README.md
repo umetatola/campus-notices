@@ -62,6 +62,11 @@ written by Claude from the Korean original (structured output, so the reply alwa
 - **Delivery.** Matches go to an outbox table whose primary key (user, notice) rules out duplicates. One email per
   user lists all new matches. Each user's rows are locked while their email is sent; failed sends are retried up to
   5 times. Delivery is at-least-once.
+- **Unsubscribe.** Every alert email has `List-Unsubscribe` and `List-Unsubscribe-Post` headers (RFC 8058), so mail
+  apps show their own one-click unsubscribe button, plus an "Unsubscribe" link that opens a confirm page (mail
+  scanners follow links, so a plain visit changes nothing). The link carries a random per-user token, so it works
+  signed out; it can only pause alerts. Pausing keeps the user's keywords, drops unsent alerts and stops new ones,
+  and the Alerts page offers to turn them back on.
 
 ## API
 
@@ -80,6 +85,9 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 | GET | `/api/me` | The signed-in user (401 when signed out) |
 | GET/POST | `/api/subscriptions` | List or follow keywords (signed in) |
 | DELETE | `/api/subscriptions/{id}` | Stop following a keyword |
+| POST | `/api/alerts/unsubscribe?token=` | Pause alert emails (one-click, from the email link; no session needed) |
+| GET | `/api/alerts/status` | Whether alerts are paused (signed in) |
+| POST | `/api/alerts/resume` | Turn alerts back on (signed in) |
 | GET | `/api/docs` · `/api/openapi` | API documentation (Swagger UI) and OpenAPI spec |
 | GET | `/actuator/health` | Health check |
 

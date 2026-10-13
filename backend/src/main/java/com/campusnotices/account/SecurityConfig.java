@@ -26,9 +26,11 @@ public class SecurityConfig {
 						// API documentation is public: the JSON spec and the Swagger UI page
 						.requestMatchers(HttpMethod.GET, "/api/openapi", "/api/openapi/**", "/api/docs", "/api/docs/**").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/auth/request-link", "/api/auth/verify").permitAll()
+						// one-click unsubscribe: authorized by the token in the link, not by a session
+						.requestMatchers(HttpMethod.POST, "/api/alerts/unsubscribe").permitAll()
 						.requestMatchers("/api/**").authenticated()
 						.anyRequest().permitAll())
-				.csrf(csrf -> csrf.spa())
+				.csrf(csrf -> csrf.spa().ignoringRequestMatchers("/api/alerts/unsubscribe"))
 				// an API answers 401, it doesn't redirect to a login page
 				.exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
 				.formLogin(form -> form.disable())

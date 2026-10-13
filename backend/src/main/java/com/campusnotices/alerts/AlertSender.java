@@ -3,8 +3,11 @@ package com.campusnotices.alerts;
 import com.campusnotices.AppProperties;
 import com.campusnotices.mail.EmailHtml;
 import com.campusnotices.mail.Mailer;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -32,21 +35,24 @@ public class AlertSender {
 	private final AppProperties app;
 	private final AlertProperties props;
 	private final TransactionTemplate tx;
+	private final UnsubscribeService unsubscribe;
 
 	public AlertSender(JdbcClient jdbc, Mailer mailer, AppProperties app, AlertProperties props,
-			TransactionTemplate tx) {
+			TransactionTemplate tx, UnsubscribeService unsubscribe) {
 		this.jdbc = jdbc;
 		this.mailer = mailer;
 		this.app = app;
 		this.props = props;
 		this.tx = tx;
+		this.unsubscribe = unsubscribe;
 	}
 
 	/** Returns how many emails were sent. */
 	public int sendPending(int maxUsers) {
 		List<Long> users = jdbc.sql("""
-				select distinct user_id from alert_deliveries
-				 where sent_at is null and attempts < :max
+				select distinct d.user_id from alert_deliveries d
+				  join users u on u.id = d.user_id and u.alerts_paused_at is null
+				 where d.sent_at is null and d.attempts < :max
 				 limit :limit
 				""")
 				.param("max", props.maxAttempts())
@@ -81,9 +87,10 @@ public class AlertSender {
 			return false;   // another instance has them
 		}
 		String email = jdbc.sql("select email from users where id = :u").param("u", userId).query(String.class).single();
+		String unsubscribeToken = unsubscribe.tokenFor(userId);
 		List<Long> ids = matches.stream().map(Match::noticeId).toList();
 		try {
-			mailer.send(compose(email, matches));
+			mailer.send(compose(email, unsubscribeToken, matches));
 			jdbc.sql("update alert_deliveries set sent_at = now() where user_id = :u and notice_id in (:ids)")
 					.param("u", userId).param("ids", ids).update();
 			return true;
@@ -100,7 +107,7 @@ public class AlertSender {
 		}
 	}
 
-	Mailer.Email compose(String to, List<Match> matches) {
+	Mailer.Email compose(String to, String unsubscribeToken, List<Match> matches) {
 		String subject = matches.size() == 1
 				? "New notice: " + display(matches.getFirst())
 				: matches.size() + " new notices match your keywords";
@@ -136,10 +143,18 @@ public class AlertSender {
 			html.append("</span></li>");
 		}
 		String manage = app.baseUrl() + "/alerts";
+		String token = URLEncoder.encode(unsubscribeToken, StandardCharsets.UTF_8);
+		String unsubscribePage = app.baseUrl() + "/unsubscribe?token=" + token;
 		text.append("Change the keywords you follow: ").append(manage).append('\n');
+		text.append("Stop these emails: ").append(unsubscribePage).append('\n');
 		html.append("</ul>").append(EmailHtml.note("<a style=\"color:#6e7887\" href=\""
-				+ HtmlUtils.htmlEscape(manage) + "\">Change the keywords you follow</a>"));
-		return new Mailer.Email(to, subject, text.toString(), EmailHtml.page(html.toString()));
+				+ HtmlUtils.htmlEscape(manage) + "\">Change the keywords you follow</a> · <a style=\"color:#6e7887\" href=\""
+				+ HtmlUtils.htmlEscape(unsubscribePage) + "\">Unsubscribe</a>"));
+		// RFC 2369 + RFC 8058: mail apps show their own unsubscribe button and POST to this URL in one click
+		Map<String, String> headers = Map.of(
+				"List-Unsubscribe", "<" + app.baseUrl() + "/api/alerts/unsubscribe?token=" + token + ">",
+				"List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
+		return new Mailer.Email(to, subject, text.toString(), EmailHtml.page(html.toString()), headers);
 	}
 
 	private static String display(Match m) {

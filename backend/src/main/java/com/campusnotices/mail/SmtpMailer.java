@@ -28,6 +28,9 @@ public class SmtpMailer implements Mailer {
 			helper.setTo(email.to());
 			helper.setSubject(email.subject());
 			helper.setText(email.text(), email.html());
+			for (var header : email.headers().entrySet()) {
+				message.setHeader(header.getKey(), header.getValue());
+			}
 			sender.send(message);
 		} catch (MessagingException e) {
 			throw new MailSendException("Could not build email to " + email.to(), e);
