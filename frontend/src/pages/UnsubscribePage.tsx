@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
 import { ApiError, unsubscribe } from '../api'
+import { useI18n } from '../i18n'
 
 /**
  * Opened from the "Unsubscribe" link in an alert email. It asks before acting: mail scanners open links on
@@ -8,19 +9,20 @@ import { ApiError, unsubscribe } from '../api'
  */
 export default function UnsubscribePage() {
   const [params] = useSearchParams()
+  const { t } = useI18n()
   const token = params.get('token') ?? ''
   const stop = useMutation({ mutationFn: () => unsubscribe(token) })
 
   if (!token || (stop.error instanceof ApiError && stop.error.status === 404)) {
     return (
       <div className="mx-auto max-w-md space-y-3 py-8">
-        <h1 className="text-2xl font-semibold">This link doesn't work</h1>
+        <h1 className="text-2xl font-semibold">{t('unsub.badTitle')}</h1>
         <p className="text-ink-2">
-          Open the newest alert email and use its unsubscribe link, or{' '}
+          {t('unsub.badBefore')}
           <Link to="/alerts" className="text-accent underline">
-            manage your alerts
-          </Link>{' '}
-          after signing in.
+            {t('unsub.badLink')}
+          </Link>
+          {t('unsub.badAfter')}
         </p>
       </div>
     )
@@ -29,13 +31,13 @@ export default function UnsubscribePage() {
   if (stop.isSuccess) {
     return (
       <div className="mx-auto max-w-md space-y-3 py-8">
-        <h1 className="text-2xl font-semibold">You're unsubscribed</h1>
+        <h1 className="text-2xl font-semibold">{t('unsub.doneTitle')}</h1>
         <p className="text-ink-2">
-          You won't get alert emails anymore. Your keywords are kept, so you can turn alerts back on any time from{' '}
+          {t('unsub.doneBefore')}
           <Link to="/alerts" className="text-accent underline">
-            your alerts
+            {t('unsub.doneLink')}
           </Link>
-          .
+          {t('unsub.doneAfter')}
         </p>
       </div>
     )
@@ -43,11 +45,11 @@ export default function UnsubscribePage() {
 
   return (
     <div className="mx-auto max-w-md space-y-4 py-8">
-      <h1 className="text-2xl font-semibold">Stop alert emails?</h1>
-      <p className="text-ink-2">We'll stop emailing you about new notices. You can turn alerts back on later.</p>
+      <h1 className="text-2xl font-semibold">{t('unsub.askTitle')}</h1>
+      <p className="text-ink-2">{t('unsub.askText')}</p>
       {stop.isError && (
         <p role="alert" className="text-sm text-due">
-          {stop.error.message}. Please try again.
+          {t('signIn.errorSuffix', { message: stop.error.message })}
         </p>
       )}
       <button
@@ -55,7 +57,7 @@ export default function UnsubscribePage() {
         disabled={stop.isPending}
         className="w-full rounded-lg bg-accent px-4 py-3 font-medium text-surface disabled:opacity-60"
       >
-        {stop.isPending ? 'Unsubscribing…' : 'Unsubscribe'}
+        {stop.isPending ? t('unsub.working') : t('unsub.button')}
       </button>
     </div>
   )

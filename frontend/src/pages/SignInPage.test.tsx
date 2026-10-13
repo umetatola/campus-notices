@@ -46,4 +46,11 @@ describe('SignInPage', () => {
     renderPage(<SignInPage />, { url: '/sign-in', path: '/sign-in' })
     expect(await screen.findByText('other page')).toBeInTheDocument()
   })
+
+  it('is translated in Korean mode', async () => {
+    mockApi({ '/api/me': () => new Response(null, { status: 401 }) })
+    renderPage(<SignInPage />, { url: '/sign-in', path: '/sign-in', lang: 'ko' })
+    expect(await screen.findByRole('heading', { name: '로그인' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '로그인 링크 받기' })).toBeInTheDocument()
+  })
 })

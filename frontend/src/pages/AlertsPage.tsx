@@ -10,12 +10,14 @@ import {
   type Subscription,
 } from '../api'
 import { useMe } from '../useMe'
+import { useI18n } from '../i18n'
 
 const SUGGESTIONS = ['scholarship', '장학', 'dorm', '기숙사', 'internship', 'visa', 'graduation', '수강']
 const MAX_KEYWORDS = 20
 
 export default function AlertsPage() {
   const me = useMe()
+  const { t } = useI18n()
   const queryClient = useQueryClient()
   const [keyword, setKeyword] = useState('')
 
@@ -39,7 +41,7 @@ export default function AlertsPage() {
   })
 
   if (me === null) return <Navigate to="/sign-in" replace />
-  if (me === undefined || subscriptions.isPending) return <p className="py-8 text-center text-ink-2">Loading…</p>
+  if (me === undefined || subscriptions.isPending) return <p className="py-8 text-center text-ink-2">{t('alerts.loading')}</p>
 
   const list = subscriptions.data ?? []
   const followed = new Set(list.map((s) => s.keyword.toLowerCase()))
@@ -48,25 +50,25 @@ export default function AlertsPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Your alerts</h1>
+        <h1 className="text-2xl font-semibold">{t('alerts.title')}</h1>
         <p className="text-ink-2">
-          When a new notice mentions one of these words, in Korean or in its English summary, we email{' '}
-          <span className="font-medium text-ink">{me.email}</span>. Several matches arrive together in one email.
+          {t('alerts.introBefore')}
+          <span className="font-medium text-ink">{me.email}</span>
+          {t('alerts.introAfter')}
         </p>
       </div>
 
       {status.data?.paused && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-due/40 bg-due-soft px-4 py-3">
           <p className="text-sm">
-            <span className="font-medium">Alerts are paused.</span> You unsubscribed, so we don't email you. Your
-            keywords are kept.
+            <span className="font-medium">{t('alerts.pausedTitle')}</span> {t('alerts.pausedText')}
           </p>
           <button
             onClick={() => resume.mutate()}
             disabled={resume.isPending}
             className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-surface disabled:opacity-60"
           >
-            Turn alerts back on
+            {t('alerts.resume')}
           </button>
         </div>
       )}
@@ -79,7 +81,7 @@ export default function AlertsPage() {
         }}
       >
         <label htmlFor="keyword" className="sr-only">
-          Keyword to follow
+          {t('alerts.keywordLabel')}
         </label>
         <input
           id="keyword"
@@ -87,7 +89,7 @@ export default function AlertsPage() {
           maxLength={50}
           disabled={full}
           onChange={(e) => setKeyword(e.target.value)}
-          placeholder={full ? `You follow ${MAX_KEYWORDS} keywords, the maximum` : 'Add a keyword, e.g. scholarship'}
+          placeholder={full ? t('alerts.full', { max: MAX_KEYWORDS }) : t('alerts.placeholder')}
           className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-4 py-2.5 placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
         />
         <button
@@ -95,7 +97,7 @@ export default function AlertsPage() {
           disabled={full || add.isPending || !keyword.trim()}
           className="shrink-0 rounded-lg bg-accent px-4 py-2.5 font-medium text-surface disabled:opacity-50"
         >
-          Follow
+          {t('alerts.follow')}
         </button>
       </form>
       {add.isError && (
@@ -106,10 +108,10 @@ export default function AlertsPage() {
 
       {list.length === 0 ? (
         <div className="rounded-lg border border-dashed border-line p-6 text-center text-ink-2">
-          You don't follow any keywords yet. Add one above, or pick a suggestion below.
+          {t('alerts.none')}
         </div>
       ) : (
-        <ul className="flex flex-wrap gap-2" aria-label="Keywords you follow">
+        <ul className="flex flex-wrap gap-2" aria-label={t('alerts.listLabel')}>
           {list.map((s) => (
             <li
               key={s.id}
@@ -118,7 +120,7 @@ export default function AlertsPage() {
               <span>{s.keyword}</span>
               <button
                 onClick={() => remove.mutate(s.id)}
-                aria-label={`Stop following ${s.keyword}`}
+                aria-label={t('alerts.unfollow', { keyword: s.keyword })}
                 className="rounded-full px-2 text-muted hover:bg-surface hover:text-ink"
               >
                 ×
@@ -129,7 +131,7 @@ export default function AlertsPage() {
       )}
 
       <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-ink-2">Suggestions</h2>
+        <h2 className="text-sm font-semibold text-ink-2">{t('alerts.suggestions')}</h2>
         <div className="flex flex-wrap gap-2">
           {SUGGESTIONS.filter((k) => !followed.has(k.toLowerCase())).map((k) => (
             <button
@@ -145,8 +147,7 @@ export default function AlertsPage() {
       </div>
 
       <p className="text-xs text-muted">
-        You only get notices posted after you follow a keyword. Keywords match anywhere in the text, so "장학" also
-        catches "장학금".
+        {t('alerts.footnote')}
       </p>
     </div>
   )
