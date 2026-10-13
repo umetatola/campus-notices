@@ -113,8 +113,21 @@ cd backend && ./gradlew test
   notices) and the HTTP API; the summary queue's edge cases (retries, giving up, edits mid-summary, expired
   locks); and sign-in, keywords and alert emails end to end. They are skipped when Docker is not running.
 
-CI (GitHub Actions) runs the backend tests, the frontend lint and build, and the Docker build on every push and
-pull request.
+Frontend tests (Vitest, React Testing Library, jsdom) run each page against a mocked API:
+
+```bash
+cd frontend && npm test
+```
+
+- Notice list: English titles with the Korean original, debounced search (one request after typing stops),
+  category filter and paging kept in the URL, empty and error states with retry.
+- Notice page: summary, deadline and attachments; unsafe HTML in notice bodies (scripts, event handlers) is
+  removed before rendering; pending summaries and missing notices.
+- Sign-in: the request carries the CSRF token from the cookie, server errors are shown, signed-in users are
+  redirected. Date labels follow Korean time (a notice posted at 00:05 KST is "Today").
+
+CI (GitHub Actions) runs the backend tests, the frontend lint, tests and build, and the Docker build on every push
+and pull request.
 
 ## Deployment
 
