@@ -1,5 +1,7 @@
 # Caddy gets and renews a free HTTPS certificate for $DOMAIN automatically.
 {$DOMAIN} {
 	encode gzip
+	# browsers must use HTTPS for this site for a year (the app sets the other security headers)
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
 	reverse_proxy app:8080
 }

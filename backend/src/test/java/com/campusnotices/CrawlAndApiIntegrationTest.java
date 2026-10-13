@@ -118,6 +118,18 @@ class CrawlAndApiIntegrationTest {
 	}
 
 	@Test
+	void sendsSecurityHeaders() {
+		var response = mvc.get().uri("/api/status").exchange();
+		assertThat(response).hasStatusOk();
+		assertThat(response.getResponse().getHeader("Content-Security-Policy"))
+				.contains("script-src 'self'").contains("frame-ancestors 'none'").contains("object-src 'none'");
+		assertThat(response.getResponse().getHeader("X-Frame-Options")).isEqualTo("DENY");
+		assertThat(response.getResponse().getHeader("X-Content-Type-Options")).isEqualTo("nosniff");
+		assertThat(response.getResponse().getHeader("Referrer-Policy")).isEqualTo("strict-origin-when-cross-origin");
+		assertThat(response.getResponse().getHeader("Permissions-Policy")).contains("camera=()");
+	}
+
+	@Test
 	void publishesApiDocsWithoutSignIn() {
 		assertThat(mvc.get().uri("/api/openapi")).hasStatusOk()
 				.bodyJson()
