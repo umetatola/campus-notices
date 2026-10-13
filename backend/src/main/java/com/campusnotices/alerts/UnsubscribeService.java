@@ -67,4 +67,19 @@ public class UnsubscribeService {
 	public void resume(long userId) {
 		jdbc.sql("update users set alerts_paused_at = null where id = :u").param("u", userId).update();
 	}
+
+	public AlertFrequency frequency(long userId) {
+		return AlertFrequency.valueOf(jdbc.sql("select alert_frequency from users where id = :u")
+				.param("u", userId).query(String.class).single());
+	}
+
+	/** Switching to daily counts as "just sent", so the first digest comes after the next 08:00, not right away. */
+	public void setFrequency(long userId, AlertFrequency frequency) {
+		jdbc.sql("""
+				update users set alert_frequency = :f,
+				       last_digest_at = case when :f = 'DAILY' and alert_frequency <> 'DAILY' then now() else last_digest_at end
+				 where id = :u
+				""")
+				.param("f", frequency.name()).param("u", userId).update();
+	}
 }

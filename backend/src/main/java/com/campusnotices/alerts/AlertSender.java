@@ -6,6 +6,7 @@ import com.campusnotices.mail.EmailHtml;
 import com.campusnotices.mail.Mailer;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -52,14 +53,21 @@ public class AlertSender {
 
 	/** Returns how many emails were sent. */
 	public int sendPending(int maxUsers) {
+		return sendPending(maxUsers, Instant.now());
+	}
+
+	/** Daily users are only included once {@code now} has passed an 08:00 (Korea) since their last email. */
+	public int sendPending(int maxUsers, Instant now) {
 		List<Long> users = jdbc.sql("""
 				select distinct d.user_id from alert_deliveries d
 				  join users u on u.id = d.user_id and u.alerts_paused_at is null
 				 where d.sent_at is null and d.attempts < :max
+				   and (u.alert_frequency = 'INSTANT' or u.last_digest_at is null or u.last_digest_at < :digestTime)
 				 limit :limit
 				""")
 				.param("max", props.maxAttempts())
 				.param("limit", maxUsers)
+				.param("digestTime", java.sql.Timestamp.from(AlertFrequency.lastDigestTime(now)))
 				.query(Long.class).list();
 		int sent = 0;
 		for (long userId : users) {
@@ -96,6 +104,7 @@ public class AlertSender {
 			mailer.send(compose(email, unsubscribeToken, matches));
 			jdbc.sql("update alert_deliveries set sent_at = now() where user_id = :u and notice_id in (:ids)")
 					.param("u", userId).param("ids", ids).update();
+			jdbc.sql("update users set last_digest_at = now() where id = :u").param("u", userId).update();
 			metrics.alertEmail(true);
 			return true;
 		} catch (RuntimeException e) {

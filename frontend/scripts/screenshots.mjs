@@ -65,7 +65,7 @@ async function demoApi(page, { signedIn = false } = {}) {
       case '/api/bookmarks':
         return ok(notices.slice(0, 2))
       case '/api/alerts/status':
-        return ok({ paused: false })
+        return ok({ paused: false, frequency: 'INSTANT' })
       default:
         return route.fulfill({ status: 404 })
     }

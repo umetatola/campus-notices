@@ -7,6 +7,8 @@ import {
   fetchSubscriptions,
   removeSubscription,
   resumeAlerts,
+  setAlertFrequency,
+  type AlertFrequency,
   type Subscription,
 } from '../api'
 import { useMe } from '../useMe'
@@ -25,6 +27,10 @@ export default function AlertsPage() {
   const status = useQuery({ queryKey: ['alert-status'], queryFn: fetchAlertStatus, enabled: !!me })
   const resume = useMutation({
     mutationFn: resumeAlerts,
+    onSuccess: (next) => queryClient.setQueryData(['alert-status'], next),
+  })
+  const frequency = useMutation({
+    mutationFn: setAlertFrequency,
     onSuccess: (next) => queryClient.setQueryData(['alert-status'], next),
   })
   const add = useMutation({
@@ -128,6 +134,41 @@ export default function AlertsPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {status.data && (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-semibold text-ink-2">{t('alerts.frequency')}</legend>
+          <div className="flex flex-wrap gap-2">
+            {(['INSTANT', 'DAILY'] as AlertFrequency[]).map((f) => (
+              <label
+                key={f}
+                className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
+                  status.data.frequency === f ? 'border-accent bg-accent-soft' : 'border-line bg-surface'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="frequency"
+                  value={f}
+                  checked={status.data.frequency === f}
+                  disabled={frequency.isPending}
+                  onChange={() => frequency.mutate(f)}
+                  className="mt-1 accent-accent"
+                />
+                <span>
+                  <span className="block font-medium">{t(f === 'INSTANT' ? 'alerts.instant' : 'alerts.daily')}</span>
+                  <span className="block text-ink-2">{t(f === 'INSTANT' ? 'alerts.instantHint' : 'alerts.dailyHint')}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          {frequency.isError && (
+            <p role="alert" className="text-sm text-due">
+              {frequency.error.message}
+            </p>
+          )}
+        </fieldset>
       )}
 
       <div className="space-y-2">

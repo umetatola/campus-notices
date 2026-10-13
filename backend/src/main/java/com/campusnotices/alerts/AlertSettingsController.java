@@ -1,10 +1,14 @@
 package com.campusnotices.alerts;
 
 import com.campusnotices.account.SessionUser;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -16,7 +20,10 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/alerts")
 public class AlertSettingsController {
 
-	public record AlertStatus(boolean paused) {
+	public record AlertStatus(boolean paused, AlertFrequency frequency) {
+	}
+
+	public record FrequencyChange(@NotNull AlertFrequency frequency) {
 	}
 
 	private final UnsubscribeService unsubscribe;
@@ -39,12 +46,19 @@ public class AlertSettingsController {
 
 	@GetMapping("/status")
 	public AlertStatus status(@AuthenticationPrincipal SessionUser user) {
-		return new AlertStatus(unsubscribe.isPaused(user.id()));
+		return new AlertStatus(unsubscribe.isPaused(user.id()), unsubscribe.frequency(user.id()));
+	}
+
+	/** Instant emails, or one daily digest after 08:00 Korean time. */
+	@PutMapping("/frequency")
+	public AlertStatus frequency(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody FrequencyChange body) {
+		unsubscribe.setFrequency(user.id(), body.frequency());
+		return status(user);
 	}
 
 	@PostMapping("/resume")
 	public AlertStatus resume(@AuthenticationPrincipal SessionUser user) {
 		unsubscribe.resume(user.id());
-		return new AlertStatus(false);
+		return status(user);
 	}
 }
