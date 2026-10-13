@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate } from 'react-router'
-import { addSubscription, fetchSubscriptions, removeSubscription, type Subscription } from '../api'
+import {
+  addSubscription,
+  fetchAlertStatus,
+  fetchSubscriptions,
+  removeSubscription,
+  resumeAlerts,
+  type Subscription,
+} from '../api'
 import { useMe } from '../useMe'
 
 const SUGGESTIONS = ['scholarship', '장학', 'dorm', '기숙사', 'internship', 'visa', 'graduation', '수강']
@@ -13,6 +20,11 @@ export default function AlertsPage() {
   const [keyword, setKeyword] = useState('')
 
   const subscriptions = useQuery({ queryKey: ['subscriptions'], queryFn: fetchSubscriptions, enabled: !!me })
+  const status = useQuery({ queryKey: ['alert-status'], queryFn: fetchAlertStatus, enabled: !!me })
+  const resume = useMutation({
+    mutationFn: resumeAlerts,
+    onSuccess: (next) => queryClient.setQueryData(['alert-status'], next),
+  })
   const add = useMutation({
     mutationFn: addSubscription,
     onSuccess: (created) => {
@@ -42,6 +54,22 @@ export default function AlertsPage() {
           <span className="font-medium text-ink">{me.email}</span>. Several matches arrive together in one email.
         </p>
       </div>
+
+      {status.data?.paused && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-due/40 bg-due-soft px-4 py-3">
+          <p className="text-sm">
+            <span className="font-medium">Alerts are paused.</span> You unsubscribed, so we don't email you. Your
+            keywords are kept.
+          </p>
+          <button
+            onClick={() => resume.mutate()}
+            disabled={resume.isPending}
+            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-surface disabled:opacity-60"
+          >
+            Turn alerts back on
+          </button>
+        </div>
+      )}
 
       <form
         className="flex gap-2"

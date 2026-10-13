@@ -10,6 +10,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import SignInPage from './pages/SignInPage'
 import VerifyPage from './pages/VerifyPage'
 import AlertsPage from './pages/AlertsPage'
+import UnsubscribePage from './pages/UnsubscribePage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
       { path: '/sign-in', element: <SignInPage /> },
       { path: '/auth/verify', element: <VerifyPage /> },
       { path: '/alerts', element: <AlertsPage /> },
+      { path: '/unsubscribe', element: <UnsubscribePage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

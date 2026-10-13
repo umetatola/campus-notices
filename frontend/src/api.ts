@@ -156,3 +156,20 @@ export async function addSubscription(keyword: string): Promise<Subscription> {
 export function removeSubscription(id: number) {
   return send<void>('DELETE', `/api/subscriptions/${id}`)
 }
+
+export interface AlertStatus {
+  paused: boolean
+}
+
+/** Pauses alert emails; authorized by the token from the email link (works signed out). */
+export function unsubscribe(token: string) {
+  return send<void>('POST', `/api/alerts/unsubscribe?token=${encodeURIComponent(token)}`)
+}
+
+export function fetchAlertStatus() {
+  return getJson<AlertStatus>('/api/alerts/status')
+}
+
+export async function resumeAlerts(): Promise<AlertStatus> {
+  return (await send<AlertStatus>('POST', '/api/alerts/resume'))!
+}
