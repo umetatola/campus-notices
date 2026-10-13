@@ -65,6 +65,9 @@ written by Claude from the Korean original (structured output, so the reply alwa
 
 ## API
 
+Interactive documentation (Swagger UI) is served at `/api/docs`, generated from the code; the OpenAPI spec is at
+`/api/openapi`. Both are public.
+
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/notices?q=&category=&page=&size=` | Notices, newest first, with English title and deadline; `q` searches Korean and English text |
@@ -76,6 +79,7 @@ written by Claude from the Korean original (structured output, so the reply alwa
 | GET | `/api/me` | The signed-in user (401 when signed out) |
 | GET/POST | `/api/subscriptions` | List or follow keywords (signed in) |
 | DELETE | `/api/subscriptions/{id}` | Stop following a keyword |
+| GET | `/api/docs` · `/api/openapi` | API documentation (Swagger UI) and OpenAPI spec |
 | GET | `/actuator/health` | Health check |
 
 ## Web app
