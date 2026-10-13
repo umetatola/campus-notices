@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify'
 import { ApiError, fetchNotice, type Summary } from '../api'
 import { categoryName, dueLabel, postedLabel } from '../labels'
 import NotFoundPage from './NotFoundPage'
-import { useI18n, type Lang } from '../i18n'
+import { translate, useI18n, type Lang } from '../i18n'
 
 export default function NoticeDetailPage() {
   const { id } = useParams()
@@ -19,7 +19,18 @@ export default function NoticeDetailPage() {
   })
 
   const rawHtml = notice.data?.bodyHtml
-  const bodyHtml = useMemo(() => (rawHtml ? DOMPurify.sanitize(rawHtml) : null), [rawHtml])
+  // Image-only notices are common and their images rarely have alt text; give each one a name for screen readers.
+  const bodyHtml = useMemo(() => {
+    if (!rawHtml) return null
+    const body = DOMPurify.sanitize(rawHtml, { RETURN_DOM: true }) as HTMLElement
+    const images = Array.from(body.querySelectorAll('img'))
+    images.forEach((img, i) => {
+      if (!img.getAttribute('alt')?.trim()) {
+        img.setAttribute('alt', translate(lang, 'detail.imageAlt', { n: i + 1, total: images.length }))
+      }
+    })
+    return body.innerHTML
+  }, [rawHtml, lang])
   const hasImages = bodyHtml?.includes('<img') ?? false
 
   // go back to the list the user came from (keeps their search), or to the start page on a direct visit

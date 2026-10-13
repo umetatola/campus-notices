@@ -156,6 +156,8 @@ cd frontend && npm test
   category filter and paging kept in the URL, empty and error states with retry.
 - Notice page: summary, deadline and attachments; unsafe HTML in notice bodies (scripts, event handlers) is
   removed before rendering; pending summaries and missing notices.
+- Accessibility: every page (English and Korean) is checked with axe-core; images in notice bodies that come
+  without alt text (common for image-only notices) get one ("Notice image 1 of 3").
 - Sign-in: the request carries the CSRF token from the cookie, server errors are shown, signed-in users are
   redirected. Date labels follow Korean time (a notice posted at 00:05 KST is "Today").
 
