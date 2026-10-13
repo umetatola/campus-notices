@@ -142,7 +142,7 @@ function SearchBox({ value, onSearch }: { value: string; onSearch: (value: strin
   )
 }
 
-function CategoryChip(props: { label: string; sublabel?: string; selected: boolean; onClick: () => void }) {
+export function CategoryChip(props: { label: string; sublabel?: string; selected: boolean; onClick: () => void }) {
   return (
     <button
       onClick={props.onClick}

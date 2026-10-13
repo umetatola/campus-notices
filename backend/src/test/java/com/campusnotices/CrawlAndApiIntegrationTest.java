@@ -151,6 +151,20 @@ class CrawlAndApiIntegrationTest {
 		// old notices are never rechecked, and unedited ones have no editedAt
 		assertThat(mvc.get().uri("/api/notices/" + id)).hasStatusOk().bodyJson()
 				.hasPathSatisfying("$.editedAt", v -> v.assertThat().isNull());
+
+		// upcoming deadlines: due today up to N days ahead, soonest first; past ones and later ones are left out
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+		List<Long> ids = notices.findAll().stream().map(Notice::getId).sorted().limit(4).toList();
+		LocalDate[] due = {today.plusDays(20), today.plusDays(3), today.minusDays(1), today};
+		for (int i = 0; i < ids.size(); i++) {
+			jdbc.sql("update notice_summaries set deadline = ? where notice_id = ?").params(due[i], ids.get(i)).update();
+		}
+		assertThat(mvc.get().uri("/api/notices/deadlines")).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$[*].id", v -> v.assertThat().asArray()
+						.containsExactly(ids.get(3).intValue(), ids.get(1).intValue()));
+		assertThat(mvc.get().uri("/api/notices/deadlines?days=30")).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$[*].deadline", v -> v.assertThat().asArray()
+						.containsExactly(today.toString(), today.plusDays(3).toString(), today.plusDays(20).toString()));
 	}
 
 	@Test
