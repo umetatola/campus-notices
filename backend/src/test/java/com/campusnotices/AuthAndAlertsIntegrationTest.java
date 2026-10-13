@@ -162,6 +162,36 @@ class AuthAndAlertsIntegrationTest {
 	}
 
 	@Test
+	void bookmarksAreSavedOncePerUserAndListedNewestFirst() {
+		MockHttpSession alice = signIn("alice@ajou.ac.kr");
+		MockHttpSession bob = signIn("bob@ajou.ac.kr");
+		Notice first = save("bm-1", "기숙사 입사 안내", "dorm");
+		Notice second = save("bm-2", "도서관 휴관 안내", "library");
+
+		assertThat(mvc.put().uri("/api/bookmarks/" + first.getId()).session(alice).with(csrf())).hasStatus(204);
+		assertThat(mvc.put().uri("/api/bookmarks/" + second.getId()).session(alice).with(csrf())).hasStatus(204);
+		// saving again is harmless
+		assertThat(mvc.put().uri("/api/bookmarks/" + first.getId()).session(alice).with(csrf())).hasStatus(204);
+		assertThat(mvc.put().uri("/api/bookmarks/999999").session(alice).with(csrf())).hasStatus(404);
+
+		assertThat(mvc.get().uri("/api/bookmarks").session(alice)).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.length()", v -> v.assertThat().isEqualTo(2))
+				.hasPathSatisfying("$[0].id", v -> v.assertThat().isEqualTo(second.getId().intValue()))
+				.hasPathSatisfying("$[1].title", v -> v.assertThat().isEqualTo("기숙사 입사 안내"));
+		assertThat(mvc.get().uri("/api/bookmarks").session(bob)).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.length()", v -> v.assertThat().isEqualTo(0));
+
+		// bob can't remove alice's bookmark: deletes only ever touch the caller's own rows
+		assertThat(mvc.delete().uri("/api/bookmarks/" + first.getId()).session(bob).with(csrf())).hasStatus(204);
+		assertThat(mvc.delete().uri("/api/bookmarks/" + first.getId()).session(alice).with(csrf())).hasStatus(204);
+		assertThat(mvc.get().uri("/api/bookmarks").session(alice)).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.length()", v -> v.assertThat().isEqualTo(1));
+
+		assertThat(mvc.get().uri("/api/bookmarks")).hasStatus(401);
+		assertThat(mvc.put().uri("/api/bookmarks/" + first.getId()).session(alice)).hasStatus(403); // no CSRF token
+	}
+
+	@Test
 	void matchingNoticesAreEmailedOnceInOneDigest() {
 		// a notice from before the user followed anything never triggers an alert
 		Notice old = save("800001", "[장학] 오래된 장학금 안내", "지난 공지");

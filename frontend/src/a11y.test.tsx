@@ -37,6 +37,7 @@ function api(signedIn: boolean) {
     '/api/me': () => (signedIn ? json({ email: 'me@ajou.ac.kr' }) : new Response(null, { status: 401 })),
     '/api/subscriptions': () => json([{ id: 1, keyword: '장학', createdAt: '2026-10-01T00:00:00Z' }]),
     '/api/alerts/status': () => json({ paused: true }),
+    '/api/bookmarks': () => json([notice]),
     '/api/status': () => json({ lastUpdatedAt: '2026-10-01T00:00:00Z', updatesDelayed: false }),
   })
 }
@@ -66,6 +67,8 @@ describe('accessibility (axe)', () => {
   it('notice page', () => check('/notices/7', 'Withdraw online.'))
   it('sign-in', () => check('/sign-in', 'Email me a sign-in link'))
   it('alerts', () => check('/alerts', 'Turn alerts back on', { signedIn: true }))
+  it('saved notices', () => check('/saved', 'Saved notices', { signedIn: true }))
+  it('notice page, signed in', () => check('/notices/7', /Save/, { signedIn: true }))
   it('unsubscribe', () => check('/unsubscribe?token=abc', 'Stop alert emails?'))
   it('not found', () => check('/nowhere', 'Page not found'))
 })

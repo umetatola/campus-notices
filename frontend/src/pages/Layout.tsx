@@ -16,6 +16,7 @@ export default function Layout() {
     onSuccess: () => {
       queryClient.setQueryData(['me'], null)
       queryClient.removeQueries({ queryKey: ['subscriptions'] })
+      queryClient.removeQueries({ queryKey: ['bookmarks'] })
       navigate('/')
     },
   })
@@ -33,6 +34,9 @@ export default function Layout() {
           <nav className="flex items-center gap-4" aria-label={t('nav.account')}>
             {me ? (
               <>
+                <NavLink to="/saved" className={navLink}>
+                  {t('nav.saved')}
+                </NavLink>
                 <NavLink to="/alerts" className={navLink}>
                   {t('nav.alerts')}
                 </NavLink>
