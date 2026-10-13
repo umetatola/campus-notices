@@ -154,6 +154,16 @@ class CrawlAndApiIntegrationTest {
 	}
 
 	@Test
+	void exposesPrometheusMetrics() {
+		assertThat(mvc.get().uri("/actuator/prometheus")).hasStatusOk()
+				.bodyText()
+				.contains("campus_notices_crawl_runs_total{outcome=\"ok\"}")
+				.contains("campus_notices_summaries_total{outcome=\"done\"}")
+				.contains("campus_notices_alert_emails_total{outcome=\"sent\"}")
+				.contains("campus_notices_summaries_pending");
+	}
+
+	@Test
 	void sendsSecurityHeaders() {
 		var response = mvc.get().uri("/api/status").exchange();
 		assertThat(response).hasStatusOk();

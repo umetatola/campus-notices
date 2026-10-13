@@ -1,5 +1,6 @@
 package com.campusnotices.alerts;
 
+import com.campusnotices.Metrics;
 import com.campusnotices.AppProperties;
 import com.campusnotices.mail.EmailHtml;
 import com.campusnotices.mail.Mailer;
@@ -36,15 +37,17 @@ public class AlertSender {
 	private final AlertProperties props;
 	private final TransactionTemplate tx;
 	private final UnsubscribeService unsubscribe;
+	private final Metrics metrics;
 
 	public AlertSender(JdbcClient jdbc, Mailer mailer, AppProperties app, AlertProperties props,
-			TransactionTemplate tx, UnsubscribeService unsubscribe) {
+			TransactionTemplate tx, UnsubscribeService unsubscribe, Metrics metrics) {
 		this.jdbc = jdbc;
 		this.mailer = mailer;
 		this.app = app;
 		this.props = props;
 		this.tx = tx;
 		this.unsubscribe = unsubscribe;
+		this.metrics = metrics;
 	}
 
 	/** Returns how many emails were sent. */
@@ -93,9 +96,11 @@ public class AlertSender {
 			mailer.send(compose(email, unsubscribeToken, matches));
 			jdbc.sql("update alert_deliveries set sent_at = now() where user_id = :u and notice_id in (:ids)")
 					.param("u", userId).param("ids", ids).update();
+			metrics.alertEmail(true);
 			return true;
 		} catch (RuntimeException e) {
 			log.warn("Alert email to user {} failed: {}", userId, e.toString());
+			metrics.alertEmail(false);
 			String error = e.toString();
 			jdbc.sql("""
 					update alert_deliveries set attempts = attempts + 1, last_error = :error

@@ -90,4 +90,5 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # prometheus is for the server only: Caddy answers 404 for it from outside
+        include: health,info,prometheus

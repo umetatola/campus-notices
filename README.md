@@ -106,12 +106,26 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 | GET | `/api/me` | The signed-in user (401 when signed out) |
 | GET/POST | `/api/subscriptions` | List or follow keywords (signed in) |
 | DELETE | `/api/subscriptions/{id}` | Stop following a keyword |
+| GET | `/api/bookmarks` | Saved notices, newest first (signed in) |
+| PUT/DELETE | `/api/bookmarks/{noticeId}` | Save or unsave a notice (idempotent, up to 200) |
 | POST | `/api/alerts/unsubscribe?token=` | Pause alert emails (one-click, from the email link; no session needed) |
 | GET | `/api/alerts/status` | Whether alerts are paused (signed in) |
 | POST | `/api/alerts/resume` | Turn alerts back on (signed in) |
 | GET | `/api/status` | When notices were last updated, and whether updates are delayed (no crawl for 3 intervals) |
 | GET | `/api/docs` · `/api/openapi` | API documentation (Swagger UI) and OpenAPI spec |
 | GET | `/actuator/health` | Health check |
+| GET | `/actuator/prometheus` | Prometheus metrics; only from inside the server (Caddy answers 404 from outside) |
+
+Besides the standard JVM, HTTP and database pool metrics, the app counts its own work:
+
+| Metric | Meaning |
+|---|---|
+| `campus_notices_crawl_runs_total{outcome="ok"\|"failed"}` | Scheduled crawler runs |
+| `campus_notices_notices_saved_total` | New notices stored |
+| `campus_notices_notices_edited_total` | Notices found changed when rechecked |
+| `campus_notices_summaries_total{outcome="done"\|"retrying"\|"failed"}` | English summary attempts |
+| `campus_notices_summaries_pending` | Notices waiting for a summary (read from the database) |
+| `campus_notices_alert_emails_total{outcome="sent"\|"failed"}` | Alert digest emails |
 
 ## Web app
 

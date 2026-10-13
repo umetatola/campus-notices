@@ -79,6 +79,7 @@ The first crawl runs 10 seconds after start; notices appear right after.
 | Task | Command (in `/opt/campus-notices`) |
 |---|---|
 | See the app's log | `sudo docker compose logs -f app` |
+| Look at the app's counters (crawls, summaries, emails) | `sudo docker compose exec caddy wget -qO- http://app:8080/actuator/prometheus \| grep campus_notices` |
 | Update to the newest version (after a merge to `main`) | `sudo docker compose pull && sudo docker compose up -d` |
 | Restart everything | `sudo docker compose restart` |
 | Database backups | made daily at 04:30 into `backups/` (last 7 kept) |
