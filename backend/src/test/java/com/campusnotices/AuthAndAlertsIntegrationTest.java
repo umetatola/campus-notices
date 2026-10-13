@@ -34,7 +34,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /** Sign-in by email link, keyword subscriptions and alert emails, end to end over HTTP. */
-@SpringBootTest(properties = {"crawler.enabled=false", "summarizer.provider=none",
+@SpringBootTest(properties = {"crawler.enabled=false", "summarizer.provider=none", "rate-limit.sign-in-per-minute=1000",
 		"summarizer.initial-delay=PT1H", "alerts.initial-delay=PT1H", "alerts.summary-wait=PT0S"})
 @AutoConfigureMockMvc
 @Testcontainers(disabledWithoutDocker = true)
