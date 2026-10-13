@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import NoticeListPage from './NoticeListPage'
 import { json, mockApi, renderPage } from '../test/helpers'
@@ -15,6 +15,7 @@ const notice = (over: Partial<NoticeItem>): NoticeItem => ({
   deadline: null,
   pinned: false,
   sourceUrl: 'https://www.ajou.ac.kr/kr/ajou/notice.do?articleNo=1',
+  editedAt: null,
   ...over,
 })
 
@@ -47,6 +48,15 @@ describe('NoticeListPage', () => {
     expect(screen.getByText('2 notices')).toBeInTheDocument()
     expect(screen.getAllByRole('link')[0]).toHaveAttribute('href', '/notices/1')
     expect(screen.getByRole('link', { name: /feed reader/ })).toHaveAttribute('href', '/api/notices/feed.xml')
+  })
+
+  it('marks notices the university edited after posting', async () => {
+    api(() => page([notice({ editedAt: '2026-10-12T03:00:00Z' }), notice({ id: 2, title: '도서관 휴관 안내', titleEn: null })]))
+    renderPage(<NoticeListPage />)
+
+    await screen.findByText('Fall scholarship applications')
+    expect(screen.getAllByText('Edited')).toHaveLength(1)
+    expect(within(screen.getAllByRole('listitem')[0]).getByText('Edited')).toBeInTheDocument()
   })
 
   it('searches after typing stops and keeps the query in the URL', async () => {

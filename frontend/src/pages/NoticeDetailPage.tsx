@@ -95,6 +95,14 @@ export default function NoticeDetailPage() {
               <time dateTime={notice.data.postedOn}>
                 {t('detail.posted', { date: postedLabel(notice.data.postedOn, undefined, lang) })}
               </time>
+              {notice.data.editedAt && (
+                <>
+                  <span aria-hidden>·</span>
+                  <time dateTime={notice.data.editedAt} title={t('detail.editedHint')} className="font-medium text-ink-2">
+                    {t('detail.edited', { date: shortDate[lang].format(new Date(notice.data.editedAt)) })}
+                  </time>
+                </>
+              )}
             </div>
             <a
               href={notice.data.sourceUrl}
@@ -198,6 +206,11 @@ function SummaryCard({ noticeId, summary }: { noticeId: number; summary: Summary
 const longDate = {
   en: new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
   ko: new Intl.DateTimeFormat('ko', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }),
+}
+
+const shortDate: Record<Lang, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'Asia/Seoul' }),
+  ko: new Intl.DateTimeFormat('ko', { month: 'long', day: 'numeric', timeZone: 'Asia/Seoul' }),
 }
 
 function formatDate(isoDate: string, lang: Lang): string {

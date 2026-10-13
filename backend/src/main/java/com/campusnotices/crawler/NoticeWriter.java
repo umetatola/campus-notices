@@ -40,6 +40,11 @@ public class NoticeWriter {
 		return saved;
 	}
 
+	@Transactional
+	public void markChecked(long noticeId) {
+		notices.findById(noticeId).ifPresent(Notice::markChecked);
+	}
+
 	static String contentHash(ScrapedNotice n) {
 		StringBuilder sb = new StringBuilder()
 				.append(n.title()).append('\n')

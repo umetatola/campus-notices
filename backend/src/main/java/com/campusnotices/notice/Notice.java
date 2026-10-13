@@ -61,6 +61,12 @@ public class Notice {
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
+	@Column(name = "checked_at")
+	private Instant checkedAt;
+
+	@Column(name = "edited_at")
+	private Instant editedAt;
+
 	@ElementCollection(fetch = FetchType.LAZY)
 	@CollectionTable(name = "notice_attachments", joinColumns = @JoinColumn(name = "notice_id"))
 	@OrderColumn(name = "position")
@@ -78,6 +84,7 @@ public class Notice {
 	/** Copies scraped content in; returns true when the content changed. */
 	public boolean applyContent(ScrapedNotice scraped, String hash) {
 		boolean changed = !hash.equals(contentHash);
+		boolean edited = changed && contentHash != null; // stored before, now different
 		this.category = scraped.category();
 		this.title = scraped.title();
 		this.department = scraped.department();
@@ -89,10 +96,19 @@ public class Notice {
 		this.contentHash = hash;
 		this.attachments.clear();
 		this.attachments.addAll(scraped.attachments());
+		Instant now = Instant.now();
 		if (changed) {
-			this.updatedAt = Instant.now();
+			this.updatedAt = now;
 		}
+		if (edited) {
+			this.editedAt = now;
+		}
+		this.checkedAt = now;
 		return changed;
+	}
+
+	public void markChecked() {
+		this.checkedAt = Instant.now();
 	}
 
 	public Long getId() { return id; }
@@ -109,5 +125,7 @@ public class Notice {
 	public String getContentHash() { return contentHash; }
 	public Instant getFirstSeenAt() { return firstSeenAt; }
 	public Instant getUpdatedAt() { return updatedAt; }
+	public Instant getCheckedAt() { return checkedAt; }
+	public Instant getEditedAt() { return editedAt; }
 	public List<Attachment> getAttachments() { return attachments; }
 }

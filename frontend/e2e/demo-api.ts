@@ -10,6 +10,7 @@ export const notice = {
   deadline: '2099-10-19',
   pinned: true,
   sourceUrl: 'https://www.ajou.ac.kr/kr/ajou/notice.do?mode=view&articleNo=375874',
+  editedAt: null,
 }
 
 /** Answers the web app's API calls with fixed data, so the test needs no server or database. */

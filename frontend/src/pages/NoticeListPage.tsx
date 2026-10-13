@@ -194,6 +194,11 @@ function NoticeRow({ notice }: { notice: NoticeItem }) {
           {due && (
             <span className="rounded bg-due-soft px-1.5 py-0.5 text-xs font-medium text-due">{due}</span>
           )}
+          {notice.editedAt && (
+            <span className="rounded border border-line px-1.5 py-0.5 text-xs font-medium text-ink-2">
+              {t('list.edited')}
+            </span>
+          )}
           <span className="text-accent">{categoryName(notice.category, lang)}</span>
           {notice.department && (
             <>

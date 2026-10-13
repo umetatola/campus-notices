@@ -54,6 +54,10 @@ crawler:
   source: ajou-main
   interval: PT15M
   initial-delay: PT10S
+  # Re-fetch notices posted in the last 7 days, each at most every 6 hours, 10 per run, to catch edits.
+  recheck-days: 7
+  recheck-every: PT6H
+  recheck-batch: 10
   # Pause between any two requests to the university server.
   request-delay: PT1S
   # How far back to go when a page has only unknown notices (first run / backfill).

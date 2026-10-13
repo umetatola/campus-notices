@@ -19,7 +19,7 @@ class DeadlineCalendarTest {
 	private static NoticeDetail notice(Summary summary) {
 		return new NoticeDetail(42, "수강 철회 기간 안내", "학사", "학사팀", LocalDate.of(2026, 10, 1), false,
 				"https://www.ajou.ac.kr/kr/ajou/notice.do?mode=view&articleNo=42", "<p>본문</p>", "본문", List.of(),
-				summary, NOW, NOW);
+				summary, NOW, NOW, null);
 	}
 
 	private static Summary done(LocalDate deadline, String note) {

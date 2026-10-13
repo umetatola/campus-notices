@@ -27,9 +27,9 @@ class NoticeFeedTest {
 	void writesAValidAtomFeedWithEscapedText() throws Exception {
 		List<NoticeItem> items = List.of(
 				new NoticeItem(7, "[학사] 수강 <철회> & 환불 \"안내\"", "Course withdrawal & refunds", "학사", "학사팀",
-						LocalDate.of(2026, 10, 12), LocalDate.of(2026, 10, 19), false, "https://www.ajou.ac.kr/7"),
+						LocalDate.of(2026, 10, 12), LocalDate.of(2026, 10, 19), false, "https://www.ajou.ac.kr/7", null),
 				new NoticeItem(8, "주차 안내\u0001", null, null, null, LocalDate.of(2026, 10, 11), null, false,
-						"https://www.ajou.ac.kr/8"));
+						"https://www.ajou.ac.kr/8", null));
 
 		String xml = NoticeFeed.atom("https://notices.example", "https://notices.example/api/notices/feed.xml",
 				"Campus Notices", items, NOW);

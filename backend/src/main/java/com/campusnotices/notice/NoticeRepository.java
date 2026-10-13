@@ -28,13 +28,23 @@ public interface NoticeRepository extends JpaRepository<Notice, Long> {
 	/** Newest first; {@code q} matches the Korean title and the English title and summary. */
 	@Query(value = """
 			select new com.campusnotices.notice.NoticeListRow(n.id, n.title, n.category, n.department,
-			       n.postedOn, n.pinned, n.url, s.titleEn, s.deadline)
+			       n.postedOn, n.pinned, n.url, s.titleEn, s.deadline, n.editedAt)
 			from Notice n left join NoticeSummary s on s.noticeId = n.id
 			""" + SEARCH_WHERE + """
 			order by n.postedOn desc, n.id desc
 			""",
 			countQuery = "select count(n) from Notice n left join NoticeSummary s on s.noticeId = n.id " + SEARCH_WHERE)
 	Page<NoticeListRow> search(@Param("category") String category, @Param("q") String q, Pageable pageable);
+
+	/** Recent notices not looked at since {@code before}, least recently checked first. */
+	@Query("""
+			select n from Notice n
+			 where n.source = :source and n.postedOn >= :since
+			   and (n.checkedAt is null or n.checkedAt < :before)
+			 order by n.checkedAt asc nulls first
+			""")
+	List<Notice> findDueForRecheck(@Param("source") String source, @Param("since") java.time.LocalDate since,
+			@Param("before") java.time.Instant before, org.springframework.data.domain.Limit limit);
 
 	@Query("select distinct n.category from Notice n where n.category is not null order by n.category")
 	List<String> findCategories();

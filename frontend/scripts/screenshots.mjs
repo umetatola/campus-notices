@@ -21,6 +21,7 @@ const notices = [
 ].map(([id, title, titleEn, category, department, posted, due, pinned]) => ({
   id, title, titleEn, category, department, postedOn: iso(posted), deadline: due === null ? null : iso(due), pinned,
   sourceUrl: `https://www.ajou.ac.kr/kr/ajou/notice.do?mode=view&articleNo=${id}`,
+  editedAt: null,
 }))
 
 const detail = {
