@@ -34,14 +34,16 @@ public class NoticeCrawler {
 	private final AjouNoticeParser parser;
 	private final NoticeRepository notices;
 	private final NoticeWriter writer;
+	private final CrawlStatus status;
 
 	public NoticeCrawler(CrawlerProperties props, PageFetcher fetcher, AjouNoticeParser parser,
-			NoticeRepository notices, NoticeWriter writer) {
+			NoticeRepository notices, NoticeWriter writer, CrawlStatus status) {
 		this.props = props;
 		this.fetcher = fetcher;
 		this.parser = parser;
 		this.notices = notices;
 		this.writer = writer;
+		this.status = status;
 	}
 
 	@Scheduled(fixedDelayString = "${crawler.interval}", initialDelayString = "${crawler.initial-delay}")
@@ -57,6 +59,7 @@ public class NoticeCrawler {
 			Thread.currentThread().interrupt();
 		} catch (Exception e) {
 			log.warn("Crawl failed: {}", e.toString());
+			status.recordFailure(e);
 		}
 	}
 
@@ -95,6 +98,7 @@ public class NoticeCrawler {
 				break;
 			}
 		}
+		status.recordSuccess();
 		return new Result(pages, saved, failures);
 	}
 

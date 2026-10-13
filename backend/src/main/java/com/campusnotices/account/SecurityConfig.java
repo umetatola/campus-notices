@@ -22,7 +22,7 @@ public class SecurityConfig {
 	SecurityFilterChain api(HttpSecurity http) throws Exception {
 		http
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers(HttpMethod.GET, "/api/notices/**", "/api/csrf", "/actuator/health").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/notices/**", "/api/csrf", "/api/status", "/actuator/health").permitAll()
 						// API documentation is public: the JSON spec and the Swagger UI page
 						.requestMatchers(HttpMethod.GET, "/api/openapi", "/api/openapi/**", "/api/docs", "/api/docs/**").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/auth/request-link", "/api/auth/verify").permitAll()

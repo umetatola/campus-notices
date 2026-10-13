@@ -44,6 +44,16 @@ export function dueLabel(isoDate: string | null, now = new Date(), lang: Lang = 
   return translate(lang, 'due.date', { date: shortDate[lang].format(localDate(isoDate)) })
 }
 
+/** "5 minutes ago", "2 hours ago", "5분 전", from an ISO timestamp. */
+export function timeAgo(isoInstant: string, now = new Date(), lang: Lang = 'en'): string {
+  const seconds = Math.max(0, Math.round((now.getTime() - new Date(isoInstant).getTime()) / 1000))
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' })
+  if (seconds < 60) return rtf.format(0, 'second')
+  if (seconds < 3600) return rtf.format(-Math.floor(seconds / 60), 'minute')
+  if (seconds < 86_400) return rtf.format(-Math.floor(seconds / 3600), 'hour')
+  return rtf.format(-Math.floor(seconds / 86_400), 'day')
+}
+
 function localDate(isoDate: string): Date {
   const [y, m, d] = isoDate.split('-').map(Number)
   return new Date(y, m - 1, d)

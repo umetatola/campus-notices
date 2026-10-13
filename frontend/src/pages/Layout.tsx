@@ -1,12 +1,14 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, NavLink, Outlet, ScrollRestoration, useNavigate } from 'react-router'
-import { signOut } from '../api'
+import { fetchStatus, signOut } from '../api'
+import { timeAgo } from '../labels'
 import { useMe } from '../useMe'
 import { useI18n } from '../i18n'
 
 export default function Layout() {
   const me = useMe()
   const { lang, setLang, t } = useI18n()
+  const status = useQuery({ queryKey: ['status'], queryFn: fetchStatus, refetchInterval: 60_000 })
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const logout = useMutation({
@@ -64,6 +66,15 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="mx-auto max-w-3xl px-4 pb-10 text-xs text-muted">
+        {status.data && (
+          <p className={status.data.updatesDelayed ? 'mb-1 font-medium text-due' : 'mb-1'}>
+            {status.data.lastUpdatedAt === null
+              ? t('footer.neverUpdated')
+              : t(status.data.updatesDelayed ? 'footer.delayed' : 'footer.updated', {
+                  time: timeAgo(status.data.lastUpdatedAt, new Date(status.dataUpdatedAt), lang),
+                })}
+          </p>
+        )}
         {t('footer.note')}
       </footer>
       <ScrollRestoration />

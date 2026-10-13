@@ -173,3 +173,12 @@ export function fetchAlertStatus() {
 export async function resumeAlerts(): Promise<AlertStatus> {
   return (await send<AlertStatus>('POST', '/api/alerts/resume'))!
 }
+
+export interface SiteStatus {
+  lastUpdatedAt: string | null
+  updatesDelayed: boolean
+}
+
+export function fetchStatus() {
+  return getJson<SiteStatus>('/api/status')
+}
