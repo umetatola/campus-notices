@@ -1,7 +1,7 @@
 # One image for the whole site: the React app is built first and served by Spring Boot.
 
 # 1. Web app
-FROM node:24-alpine AS web
+FROM node:26-alpine AS web
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
