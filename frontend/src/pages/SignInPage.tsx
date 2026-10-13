@@ -3,9 +3,11 @@ import { useMutation } from '@tanstack/react-query'
 import { Navigate } from 'react-router'
 import { requestSignInLink } from '../api'
 import { useMe } from '../useMe'
+import { useI18n } from '../i18n'
 
 export default function SignInPage() {
   const me = useMe()
+  const { t } = useI18n()
   const [email, setEmail] = useState('')
   const request = useMutation({ mutationFn: (address: string) => requestSignInLink(address) })
 
@@ -14,15 +16,16 @@ export default function SignInPage() {
   if (request.isSuccess) {
     return (
       <div className="mx-auto max-w-md space-y-3 py-8">
-        <h1 className="text-2xl font-semibold">Check your email</h1>
+        <h1 className="text-2xl font-semibold">{t('signIn.checkTitle')}</h1>
         <p className="text-ink-2">
-          If <span className="font-medium text-ink">{request.variables}</span> can receive mail, a sign-in link is on its
-          way. It works once and expires in 15 minutes.
+          {t('signIn.checkBefore')}
+          <span className="font-medium text-ink">{request.variables}</span>
+          {t('signIn.checkAfter')}
         </p>
         <p className="text-sm text-muted">
-          Nothing arrived? Check your spam folder, or{' '}
+          {t('signIn.nothingArrived')}
           <button className="text-accent underline" onClick={() => request.reset()}>
-            try again
+            {t('signIn.tryAgainLink')}
           </button>
           .
         </p>
@@ -33,9 +36,9 @@ export default function SignInPage() {
   return (
     <div className="mx-auto max-w-md space-y-5 py-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Sign in</h1>
+        <h1 className="text-2xl font-semibold">{t('signIn.title')}</h1>
         <p className="text-ink-2">
-          Get an email when a new notice mentions the words you care about. No password: we email you a sign-in link.
+          {t('signIn.intro')}
         </p>
       </div>
       <form
@@ -46,7 +49,7 @@ export default function SignInPage() {
         }}
       >
         <label htmlFor="email" className="block text-sm font-medium">
-          Email
+          {t('signIn.email')}
         </label>
         <input
           id="email"
@@ -60,7 +63,7 @@ export default function SignInPage() {
         />
         {request.isError && (
           <p role="alert" className="text-sm text-due">
-            {request.error.message}. Please try again.
+            {t('signIn.errorSuffix', { message: request.error.message })}
           </p>
         )}
         <button
@@ -68,7 +71,7 @@ export default function SignInPage() {
           disabled={request.isPending}
           className="w-full rounded-lg bg-accent px-4 py-3 font-medium text-surface disabled:opacity-60"
         >
-          {request.isPending ? 'Sending…' : 'Email me a sign-in link'}
+          {request.isPending ? t('signIn.sending') : t('signIn.submit')}
         </button>
       </form>
     </div>

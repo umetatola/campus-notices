@@ -37,4 +37,15 @@ describe('AlertsPage', () => {
     expect(await screen.findByText(/don't follow any keywords yet/)).toBeInTheDocument()
     expect(screen.queryByText('Alerts are paused.')).not.toBeInTheDocument()
   })
+
+  it('is translated in Korean mode', async () => {
+    mockApi({
+      '/api/me': () => json({ email: 'me@ajou.ac.kr' }),
+      '/api/subscriptions': () => json([]),
+      '/api/alerts/status': () => json({ paused: true }),
+    })
+    renderPage(<AlertsPage />, { url: '/alerts', path: '/alerts', lang: 'ko' })
+    expect(await screen.findByRole('heading', { name: '내 알림' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '알림 다시 켜기' })).toBeInTheDocument()
+  })
 })
