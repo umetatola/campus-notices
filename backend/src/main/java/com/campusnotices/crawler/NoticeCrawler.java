@@ -4,13 +4,18 @@ import com.campusnotices.crawler.AjouNoticeParser.Detail;
 import com.campusnotices.crawler.AjouNoticeParser.ListEntry;
 import com.campusnotices.notice.NoticeRepository;
 import com.campusnotices.notice.ScrapedNotice;
+import com.campusnotices.notice.Notice;
 import java.net.URI;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Limit;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -25,6 +30,7 @@ public class NoticeCrawler {
 
 	private static final Logger log = LoggerFactory.getLogger(NoticeCrawler.class);
 	private static final int PAGE_SIZE = 10;
+	private static final ZoneId KOREA = ZoneId.of("Asia/Seoul");
 
 	public record Result(int pagesRead, int noticesSaved, int failures) {
 	}
@@ -55,6 +61,10 @@ public class NoticeCrawler {
 			Result r = run();
 			log.info("Crawl finished: {} pages read, {} notices saved, {} failures",
 					r.pagesRead(), r.noticesSaved(), r.failures());
+			int edited = recheckRecent();
+			if (edited > 0) {
+				log.info("Recheck found {} edited notices", edited);
+			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		} catch (Exception e) {
@@ -100,6 +110,41 @@ public class NoticeCrawler {
 		}
 		status.recordSuccess();
 		return new Result(pages, saved, failures);
+	}
+
+	/**
+	 * Re-fetches a few recent notices (posted in the last {@code recheck-days}, each at most every
+	 * {@code recheck-every}) so edits on the university site reach us; a changed notice gets {@code edited_at} and
+	 * a new summary. Returns how many were edited. A notice that can no longer be read is marked checked anyway,
+	 * so it isn't retried on every run.
+	 */
+	public int recheckRecent() throws InterruptedException {
+		Instant now = Instant.now();
+		List<Notice> due = notices.findDueForRecheck(props.source(),
+				LocalDate.now(KOREA).minusDays(props.recheckDays()), now.minus(props.recheckEvery()),
+				Limit.of(props.recheckBatch()));
+		int edited = 0;
+		for (Notice n : due) {
+			Instant before = n.getEditedAt();
+			try {
+				URI url = articlePage(n.getSourceArticleId());
+				Detail d = parser.parseDetail(fetcher.get(url), url.toString());
+				Notice saved = writer.save(props.source(), new ScrapedNotice(n.getSourceArticleId(), n.getCategory(),
+						d.title() != null ? d.title() : n.getTitle(),
+						d.department() != null ? d.department() : n.getDepartment(),
+						d.postedOn() != null ? d.postedOn() : n.getPostedOn(),
+						url.toString(), n.isPinned(), d.bodyHtml(), d.bodyText(), d.attachments()));
+				if (saved.getEditedAt() != null && !saved.getEditedAt().equals(before)) {
+					edited++;
+				}
+			} catch (InterruptedException e) {
+				throw e;
+			} catch (Exception e) {
+				log.warn("Could not recheck notice {}: {}", n.getSourceArticleId(), e.toString());
+				writer.markChecked(n.getId());
+			}
+		}
+		return edited;
 	}
 
 	private ScrapedNotice fetchNotice(ListEntry entry) throws Exception {

@@ -12,6 +12,7 @@ const detail = (over: Partial<NoticeDetail> = {}): NoticeDetail => ({
   postedOn: '2026-10-01',
   pinned: false,
   sourceUrl: 'https://www.ajou.ac.kr/kr/ajou/notice.do?articleNo=7',
+  editedAt: null,
   summary: {
     status: 'DONE',
     titleEn: 'Course withdrawal period',
@@ -42,6 +43,20 @@ describe('NoticeDetailPage', () => {
     expect(screen.getByRole('link', { name: '안내문.pdf' })).toHaveAttribute('href', 'https://www.ajou.ac.kr/file/1')
     expect(screen.getByRole('link', { name: /Open the original/ })).toHaveAttribute('rel', 'noopener noreferrer')
     expect(screen.getByRole('link', { name: 'Add to calendar' })).toHaveAttribute('href', '/api/notices/7/calendar.ics')
+  })
+
+  it('says when the notice was edited, in Korean time', async () => {
+    show(detail({ editedAt: '2026-10-12T16:30:00Z' })) // Oct 13, 01:30 in Seoul
+
+    const edited = await screen.findByText('Edited Oct 13')
+    expect(edited).toHaveAttribute('dateTime', '2026-10-12T16:30:00Z')
+    expect(edited).toHaveAttribute('title', expect.stringContaining('changed this notice'))
+  })
+
+  it('shows no edit mark for an unedited notice', async () => {
+    show(detail())
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.queryByText(/^Edited/)).not.toBeInTheDocument()
   })
 
   it('offers no calendar link once the deadline has passed', async () => {

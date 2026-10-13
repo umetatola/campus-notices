@@ -3,7 +3,10 @@ package com.campusnotices;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.campusnotices.crawler.NoticeCrawler;
+import com.campusnotices.crawler.NoticeWriter;
 import com.campusnotices.crawler.PageFetcher;
+import com.campusnotices.notice.Notice;
+import com.campusnotices.notice.ScrapedNotice;
 import com.campusnotices.notice.NoticeRepository;
 import com.campusnotices.summary.SummaryQueue;
 import com.campusnotices.summary.SummaryStatus;
@@ -11,6 +14,11 @@ import com.campusnotices.summary.SummaryWorker;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
@@ -21,6 +29,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -53,6 +62,12 @@ class CrawlAndApiIntegrationTest {
 
 	@Autowired
 	SummaryWorker worker;
+
+	@Autowired
+	NoticeWriter writer;
+
+	@Autowired
+	JdbcClient jdbc;
 
 	@Test
 	void crawlsOnceThenStopsAtKnownNotices() throws Exception {
@@ -115,6 +130,27 @@ class CrawlAndApiIntegrationTest {
 		// search also looks at the English text
 		assertThat(mvc.get().uri("/api/notices?q={q}", "stub summary")).hasStatusOk()
 				.bodyJson().hasPathSatisfying("$.totalItems", v -> v.assertThat().isEqualTo(19));
+
+		// a recent notice edited on the site: the recheck fetches it again, marks it edited and re-queues the summary
+		Notice recent = writer.save("ajou", new ScrapedNotice("900001", "학사", "Recent notice", "학사팀",
+				LocalDate.now(ZoneId.of("Asia/Seoul")), "https://www.ajou.ac.kr/900001", false, "<p>v1</p>", "v1",
+				List.of()));
+		assertThat(recent.getEditedAt()).isNull();
+		assertThat(crawler.recheckRecent()).isZero(); // just checked, not due yet
+		jdbc.sql("update notices set checked_at = now() - interval '7 hours' where id = ?").param(recent.getId()).update();
+		FixturePages.PAGES.put("900001", "<p class=\"b-title-box\"><span class=\"b-title\">Recent notice</span></p>"
+				+ "<div class=\"b-content-box\"><div class=\"fr-view\"><p>v2: the room changed</p></div></div>");
+		assertThat(crawler.recheckRecent()).isEqualTo(1);
+		assertThat(crawler.recheckRecent()).isZero(); // checked again just now
+		assertThat(mvc.get().uri("/api/notices/" + recent.getId())).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.editedAt", v -> v.assertThat().isNotNull())
+				.hasPathSatisfying("$.bodyText", v -> v.assertThat().asString().contains("the room changed"))
+				.hasPathSatisfying("$.summary.status", v -> v.assertThat().isEqualTo("PENDING"));
+		assertThat(mvc.get().uri("/api/notices?q=Recent")).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.items[0].editedAt", v -> v.assertThat().isNotNull());
+		// old notices are never rechecked, and unedited ones have no editedAt
+		assertThat(mvc.get().uri("/api/notices/" + id)).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.editedAt", v -> v.assertThat().isNull());
 	}
 
 	@Test
@@ -144,6 +180,9 @@ class CrawlAndApiIntegrationTest {
 	@TestConfiguration
 	static class FixturePages {
 
+		/** Detail pages a test can add or change; they win over the saved fixtures. */
+		static final Map<String, String> PAGES = new ConcurrentHashMap<>();
+
 		private static final Pattern ARTICLE = Pattern.compile("articleNo=(\\d+)");
 
 		@Bean
@@ -157,6 +196,9 @@ class CrawlAndApiIntegrationTest {
 				Matcher m = ARTICLE.matcher(query);
 				m.find();
 				String id = m.group(1);
+				if (PAGES.containsKey(id)) {
+					return PAGES.get(id);
+				}
 				String saved = read("detail-" + id + ".html");
 				return saved != null ? saved
 						: "<p class=\"b-title-box\"><span class=\"b-title\">Notice " + id + "</span></p>"

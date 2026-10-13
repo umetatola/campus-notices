@@ -16,6 +16,7 @@ export interface NoticeItem {
   deadline: string | null // yyyy-MM-dd
   pinned: boolean
   sourceUrl: string
+  editedAt: string | null // set when the university changed the notice after it was first posted
 }
 
 export type SummaryStatus = 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED'

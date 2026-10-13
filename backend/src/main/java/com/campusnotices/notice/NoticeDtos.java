@@ -15,12 +15,13 @@ public final class NoticeDtos {
 	public record PageResponse<T>(List<T> items, int page, int size, long totalItems, int totalPages) {
 	}
 
+	/** {@code editedAt}: when the notice was changed on the university site after we first saw it, or null. */
 	public record NoticeItem(long id, String title, String titleEn, String category, String department,
-			LocalDate postedOn, LocalDate deadline, boolean pinned, String sourceUrl) {
+			LocalDate postedOn, LocalDate deadline, boolean pinned, String sourceUrl, Instant editedAt) {
 
 		static NoticeItem from(NoticeListRow r) {
 			return new NoticeItem(r.id(), r.title(), r.titleEn(), r.category(), r.department(), r.postedOn(),
-					r.deadline(), r.pinned(), r.url());
+					r.deadline(), r.pinned(), r.url(), r.editedAt());
 		}
 	}
 
@@ -41,12 +42,13 @@ public final class NoticeDtos {
 
 	public record NoticeDetail(long id, String title, String category, String department,
 			LocalDate postedOn, boolean pinned, String sourceUrl, String bodyHtml, String bodyText,
-			List<Attachment> attachments, Summary summary, Instant firstSeenAt, Instant updatedAt) {
+			List<Attachment> attachments, Summary summary, Instant firstSeenAt, Instant updatedAt, Instant editedAt) {
 
 		static NoticeDetail from(Notice n, NoticeSummary s) {
 			return new NoticeDetail(n.getId(), n.getTitle(), n.getCategory(), n.getDepartment(),
 					n.getPostedOn(), n.isPinned(), n.getUrl(), n.getBodyHtml(), n.getBodyText(),
-					List.copyOf(n.getAttachments()), Summary.from(s), n.getFirstSeenAt(), n.getUpdatedAt());
+					List.copyOf(n.getAttachments()), Summary.from(s), n.getFirstSeenAt(), n.getUpdatedAt(),
+					n.getEditedAt());
 		}
 	}
 }

@@ -17,6 +17,7 @@ const notice = {
   deadline: '2099-12-31',
   pinned: true,
   sourceUrl: 'https://www.ajou.ac.kr/7',
+  editedAt: '2026-10-12T03:00:00Z',
 }
 
 function api(signedIn: boolean) {
