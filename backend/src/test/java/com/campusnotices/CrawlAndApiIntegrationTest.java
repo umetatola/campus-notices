@@ -97,6 +97,8 @@ class CrawlAndApiIntegrationTest {
 				.bodyJson()
 				.hasPathSatisfying("$.summary.status", v -> v.assertThat().isEqualTo("DONE"))
 				.hasPathSatisfying("$.summary.titleEn", v -> v.assertThat().asString().startsWith("[Stub] "));
+		// stub summaries have no deadline, so there is no calendar file
+		assertThat(mvc.get().uri("/api/notices/" + id + "/calendar.ics")).hasStatus(404);
 		assertThat(mvc.get().uri("/api/notices?size=1")).hasStatusOk()
 				.bodyJson().hasPathSatisfying("$.items[0].titleEn", v -> v.assertThat().asString().startsWith("[Stub] "));
 		// search also looks at the English text

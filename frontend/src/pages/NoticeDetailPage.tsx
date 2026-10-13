@@ -82,7 +82,7 @@ export default function NoticeDetailPage() {
             </a>
           </header>
 
-          <SummaryCard summary={notice.data.summary} />
+          <SummaryCard noticeId={notice.data.id} summary={notice.data.summary} />
 
           {notice.data.attachments.length > 0 && (
             <section className="rounded-lg border border-line bg-surface p-4">
@@ -126,7 +126,7 @@ export default function NoticeDetailPage() {
   )
 }
 
-function SummaryCard({ summary }: { summary: Summary }) {
+function SummaryCard({ noticeId, summary }: { noticeId: number; summary: Summary }) {
   if (summary.status !== 'DONE') {
     return (
       <p className="rounded-lg border border-dashed border-line px-4 py-3 text-sm text-ink-2">
@@ -154,6 +154,15 @@ function SummaryCard({ summary }: { summary: Summary }) {
             {formatDate(summary.deadline)}
             {summary.deadlineNote && ` · ${summary.deadlineNote}`}
           </span>
+          {due && (
+            <a
+              href={`/api/notices/${noticeId}/calendar.ics`}
+              download
+              className="text-accent hover:underline"
+            >
+              Add to calendar
+            </a>
+          )}
         </p>
       )}
       <p className="text-xs text-muted">

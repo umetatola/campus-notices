@@ -72,6 +72,7 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 |---|---|---|
 | GET | `/api/notices?q=&category=&page=&size=` | Notices, newest first, with English title and deadline; `q` searches Korean and English text |
 | GET | `/api/notices/{id}` | One notice with body, attachments and its English summary |
+| GET | `/api/notices/{id}/calendar.ics` | The deadline as a calendar file (all-day event, reminder the day before); 404 without one |
 | GET | `/api/notices/categories` | Categories in use |
 | POST | `/api/auth/request-link` | Email a sign-in link (always 202) |
 | POST | `/api/auth/verify` | Exchange a link token for a session |
@@ -89,7 +90,7 @@ React 19 + TypeScript (Vite), TanStack Query and React Router, styled with Tailw
 - Notice list with English titles (Korean original underneath), "Due" badges for upcoming deadlines, search
   (debounced), category filters with English names, and paging. Search, category and page live in the URL, so
   any view can be bookmarked or shared.
-- Notice page with the English summary and deadline, attachments, a link to the original, and the notice body. Bodies are HTML from the university
+- Notice page with the English summary and deadline (with an "Add to calendar" .ics download), attachments, a link to the original, and the notice body. Bodies are HTML from the university
   site: sanitized on the server (jsoup) and again in the browser (DOMPurify) before rendering.
 - Loading, empty and error states; light and dark themes; Korean text wraps between words.
 
