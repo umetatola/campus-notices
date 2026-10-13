@@ -46,6 +46,7 @@ describe('NoticeListPage', () => {
     expect(screen.getByText('도서관 휴관 안내')).toBeInTheDocument()
     expect(screen.getByText('2 notices')).toBeInTheDocument()
     expect(screen.getAllByRole('link')[0]).toHaveAttribute('href', '/notices/1')
+    expect(screen.getByRole('link', { name: /feed reader/ })).toHaveAttribute('href', '/api/notices/feed.xml')
   })
 
   it('searches after typing stops and keeps the query in the URL', async () => {
@@ -69,6 +70,11 @@ describe('NoticeListPage', () => {
 
     expect(router.state.location.search).toBe('?category=%EC%9E%A5%ED%95%99')
     expect(screen.getByRole('button', { name: /Scholarships/ })).toHaveAttribute('aria-pressed', 'true')
+    // the feed link follows the filter
+    expect(await screen.findByRole('link', { name: /feed reader/ })).toHaveAttribute(
+      'href',
+      '/api/notices/feed.xml?category=%EC%9E%A5%ED%95%99',
+    )
   })
 
   it('pages through results', async () => {
@@ -99,7 +105,7 @@ describe('NoticeListPage', () => {
     api(() => page([notice({})]))
     renderPage(<NoticeListPage />, { lang: 'ko' })
 
-    const link = await screen.findByRole('link')
+    const link = await screen.findByRole('link', { name: /2학기 장학금 신청 안내/ })
     const [main, second] = link.querySelectorAll('span[lang]')
     expect(main).toHaveTextContent('2학기 장학금 신청 안내')
     expect(second).toHaveTextContent('Fall scholarship applications')

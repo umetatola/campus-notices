@@ -87,10 +87,22 @@ export default function NoticeListPage() {
             totalPages={notices.data.totalPages}
             onChange={(p) => update({ page: p === 0 ? null : String(p) })}
           />
+          <a href={feedUrl(q, category)} className="inline-block text-sm text-muted hover:text-accent hover:underline">
+            {t('list.feed')}
+          </a>
         </>
       )}
     </div>
   )
+}
+
+/** The Atom feed for the current search and category. */
+function feedUrl(q: string, category: string): string {
+  const params = new URLSearchParams()
+  if (q) params.set('q', q)
+  if (category) params.set('category', category)
+  const query = params.toString()
+  return `/api/notices/feed.xml${query ? `?${query}` : ''}`
 }
 
 function SearchBox({ value, onSearch }: { value: string; onSearch: (value: string) => void }) {

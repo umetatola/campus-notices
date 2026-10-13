@@ -1,5 +1,6 @@
 package com.campusnotices.notice;
 
+import com.campusnotices.AppProperties;
 import com.campusnotices.notice.NoticeDtos.NoticeDetail;
 import com.campusnotices.notice.NoticeDtos.NoticeItem;
 import com.campusnotices.notice.NoticeDtos.PageResponse;
@@ -17,15 +18,36 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/notices")
 public class NoticeController {
 
-	private final NoticeService service;
+	private static final int FEED_SIZE = 30;
 
-	public NoticeController(NoticeService service) {
+	private final NoticeService service;
+	private final AppProperties app;
+
+	public NoticeController(NoticeService service, AppProperties app) {
 		this.service = service;
+		this.app = app;
+	}
+
+	/** The newest notices as an Atom feed, with the same filters as the list. */
+	@GetMapping("/feed.xml")
+	public ResponseEntity<String> feed(@RequestParam(required = false) String category,
+			@RequestParam(required = false) String q) {
+		var page = service.list(category, q, 0, FEED_SIZE);
+		String self = UriComponentsBuilder.fromUriString(app.baseUrl()).path("/api/notices/feed.xml")
+				.queryParamIfPresent("category", java.util.Optional.ofNullable(category).filter(c -> !c.isBlank()))
+				.queryParamIfPresent("q", java.util.Optional.ofNullable(q).filter(t -> !t.isBlank()))
+				.encode().build().toUriString();
+		String title = "Campus Notices" + (category != null && !category.isBlank() ? " · " + category : "")
+				+ (q != null && !q.isBlank() ? " · \"" + q.strip() + "\"" : "");
+		return ResponseEntity.ok()
+				.contentType(new MediaType("application", "atom+xml", StandardCharsets.UTF_8))
+				.body(NoticeFeed.atom(app.baseUrl(), self, title, page.items(), Instant.now()));
 	}
 
 	@GetMapping
