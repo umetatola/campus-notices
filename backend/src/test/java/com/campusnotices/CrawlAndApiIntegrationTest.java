@@ -104,6 +104,17 @@ class CrawlAndApiIntegrationTest {
 				.bodyJson().hasPathSatisfying("$.totalItems", v -> v.assertThat().isEqualTo(19));
 	}
 
+	@Test
+	void publishesApiDocsWithoutSignIn() {
+		assertThat(mvc.get().uri("/api/openapi")).hasStatusOk()
+				.bodyJson()
+				.hasPathSatisfying("$.info.title", v -> v.assertThat().isEqualTo("Campus Notices API"))
+				.hasPathSatisfying("$.paths['/api/notices'].get", v -> v.assertThat().isNotNull())
+				.hasPathSatisfying("$.paths['/api/subscriptions']", v -> v.assertThat().isNotNull());
+		// the docs page itself redirects to the bundled Swagger UI
+		assertThat(mvc.get().uri("/api/docs")).hasStatus3xxRedirection();
+	}
+
 	/** Serves the saved list page, an empty second page, and detail pages (saved ones where we have them). */
 	@TestConfiguration
 	static class FixturePages {

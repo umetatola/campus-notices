@@ -70,6 +70,14 @@ summarizer:
   batch-size: 5
   max-attempts: 5
 
+# API documentation: OpenAPI JSON at /api/openapi, interactive Swagger UI at /api/docs
+springdoc:
+  api-docs:
+    path: /api/openapi
+  swagger-ui:
+    path: /api/docs
+  paths-to-match: /api/**
+
 management:
   health:
     # an SMTP outage must not mark the site as down; failed emails are retried by the outbox
