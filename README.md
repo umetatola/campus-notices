@@ -62,6 +62,12 @@ written by Claude from the Korean original (structured output, so the reply alwa
   notices simply stay queued and are summarized once a key is added. `stub` writes clearly fake summaries for UI
   work, and a real summarizer re-queues them on startup.
 
+### Security headers and updates
+
+Every response carries a Content-Security-Policy (scripts only from the site itself, no framing, no plugins),
+`X-Frame-Options: DENY`, `nosniff`, a strict Referrer-Policy and a Permissions-Policy; Caddy adds HSTS. Dependabot
+opens weekly update PRs for Gradle, npm, GitHub Actions and the Docker base images.
+
 ### Sign-in and alerts
 
 - **Passwordless sign-in.** Students enter their email and get a one-time link (15 minutes). Only the token's SHA-256

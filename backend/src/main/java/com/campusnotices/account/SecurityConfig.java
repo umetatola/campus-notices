@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
@@ -17,6 +18,23 @@ import org.springframework.security.web.authentication.logout.HttpStatusReturnin
  */
 @Configuration
 public class SecurityConfig {
+
+	/**
+	 * Scripts only from this site. Notice bodies are university HTML: their images come from ajou.ac.kr (any https
+	 * host is allowed) and they carry inline style attributes. Fonts come from Google Fonts. HSTS is set by Caddy,
+	 * which terminates HTTPS.
+	 */
+	static final String CONTENT_SECURITY_POLICY = String.join("; ",
+			"default-src 'self'",
+			"script-src 'self'",
+			"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+			"font-src 'self' https://fonts.gstatic.com",
+			"img-src 'self' https: data:",
+			"connect-src 'self'",
+			"object-src 'none'",
+			"base-uri 'self'",
+			"form-action 'self'",
+			"frame-ancestors 'none'");
 
 	@Bean
 	SecurityFilterChain api(HttpSecurity http) throws Exception {
@@ -31,6 +49,11 @@ public class SecurityConfig {
 						.requestMatchers("/api/**").authenticated()
 						.anyRequest().permitAll())
 				.csrf(csrf -> csrf.spa().ignoringRequestMatchers("/api/alerts/unsubscribe"))
+				.headers(headers -> headers
+						.contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
+						.referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+						.frameOptions(frame -> frame.deny())
+						.permissionsPolicyHeader(permissions -> permissions.policy("camera=(), microphone=(), geolocation=()")))
 				// an API answers 401, it doesn't redirect to a login page
 				.exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
 				.formLogin(form -> form.disable())
