@@ -2,9 +2,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, NavLink, Outlet, ScrollRestoration, useNavigate } from 'react-router'
 import { signOut } from '../api'
 import { useMe } from '../useMe'
+import { useI18n } from '../i18n'
 
 export default function Layout() {
   const me = useMe()
+  const { lang, setLang, t } = useI18n()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const logout = useMutation({
@@ -26,17 +28,17 @@ export default function Layout() {
           <Link to="/" className="text-lg font-semibold tracking-tight text-ink">
             Campus Notices
           </Link>
-          <nav className="flex items-center gap-4" aria-label="Account">
+          <nav className="flex items-center gap-4" aria-label={t('nav.account')}>
             {me ? (
               <>
                 <NavLink to="/alerts" className={navLink}>
-                  Alerts
+                  {t('nav.alerts')}
                 </NavLink>
                 <span className="hidden max-w-48 truncate text-sm text-muted sm:inline" title={me.email}>
                   {me.email}
                 </span>
                 <button onClick={() => logout.mutate()} className="text-sm text-ink-2 hover:text-ink">
-                  Sign out
+                  {t('nav.signOut')}
                 </button>
               </>
             ) : me === null ? (
@@ -44,9 +46,17 @@ export default function Layout() {
                 to="/sign-in"
                 className="rounded-md border border-accent px-3 py-1.5 text-sm font-medium text-accent hover:bg-accent-soft"
               >
-                Get alerts
+                {t('nav.getAlerts')}
               </NavLink>
             ) : null}
+            <button
+              onClick={() => setLang(lang === 'en' ? 'ko' : 'en')}
+              aria-label={t('nav.switchLanguage')}
+              lang={lang === 'en' ? 'ko' : 'en'}
+              className="rounded-md px-2 py-1 text-sm text-ink-2 hover:bg-accent-soft hover:text-ink"
+            >
+              {lang === 'en' ? '한국어' : 'English'}
+            </button>
           </nav>
         </div>
       </header>
@@ -54,8 +64,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="mx-auto max-w-3xl px-4 pb-10 text-xs text-muted">
-        Notices are collected from the public Ajou University notice board. Always check the original notice for
-        official details.
+        {t('footer.note')}
       </footer>
       <ScrollRestoration />
     </div>

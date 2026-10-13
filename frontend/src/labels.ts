@@ -1,3 +1,5 @@
+import { translate, type Lang } from './i18n'
+
 // The board's own categories are Korean; show an English name next to them.
 const CATEGORY_NAMES: Record<string, string> = {
   학사: 'Academic',
@@ -9,35 +11,43 @@ const CATEGORY_NAMES: Record<string, string> = {
   기타: 'Other',
 }
 
-export function categoryName(category: string | null): string {
-  if (!category) return 'Uncategorized'
-  return CATEGORY_NAMES[category] ?? category
+export function categoryName(category: string | null, lang: Lang = 'en'): string {
+  if (!category) return lang === 'ko' ? '미분류' : 'Uncategorized'
+  return lang === 'ko' ? category : (CATEGORY_NAMES[category] ?? category)
 }
 
-const dateFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' })
+const longDate = {
+  en: new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }),
+  ko: new Intl.DateTimeFormat('ko', { month: 'long', day: 'numeric', year: 'numeric' }),
+}
+const shortDate = {
+  en: new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }),
+  ko: new Intl.DateTimeFormat('ko', { month: 'long', day: 'numeric' }),
+}
 
 /** "Today", "Yesterday", or a short date. Dates come as yyyy-MM-dd in Korean time. */
-export function postedLabel(isoDate: string, now = new Date()): string {
+export function postedLabel(isoDate: string, now = new Date(), lang: Lang = 'en'): string {
   const today = kstDate(now)
   const yesterday = kstDate(new Date(now.getTime() - 86_400_000))
-  if (isoDate === today) return 'Today'
-  if (isoDate === yesterday) return 'Yesterday'
-  const [y, m, d] = isoDate.split('-').map(Number)
-  return dateFormat.format(new Date(y, m - 1, d))
+  if (isoDate === today) return translate(lang, 'date.today')
+  if (isoDate === yesterday) return translate(lang, 'date.yesterday')
+  return longDate[lang].format(localDate(isoDate))
 }
 
 /** "Due today", "Due tomorrow", "Due Oct 6", or null once the date has passed. */
-export function dueLabel(isoDate: string | null, now = new Date()): string | null {
+export function dueLabel(isoDate: string | null, now = new Date(), lang: Lang = 'en'): string | null {
   if (!isoDate) return null
   const today = kstDate(now)
   if (isoDate < today) return null
-  if (isoDate === today) return 'Due today'
-  if (isoDate === kstDate(new Date(now.getTime() + 86_400_000))) return 'Due tomorrow'
-  const [y, m, d] = isoDate.split('-').map(Number)
-  return `Due ${shortDate.format(new Date(y, m - 1, d))}`
+  if (isoDate === today) return translate(lang, 'due.today')
+  if (isoDate === kstDate(new Date(now.getTime() + 86_400_000))) return translate(lang, 'due.tomorrow')
+  return translate(lang, 'due.date', { date: shortDate[lang].format(localDate(isoDate)) })
 }
 
-const shortDate = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' })
+function localDate(isoDate: string): Date {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
 
 function kstDate(d: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(d) // en-CA gives yyyy-MM-dd

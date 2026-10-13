@@ -94,4 +94,17 @@ describe('NoticeListPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
     expect(await screen.findByText('Fall scholarship applications')).toBeInTheDocument()
   })
+
+  it('puts the Korean title first in Korean mode', async () => {
+    api(() => page([notice({})]))
+    renderPage(<NoticeListPage />, { lang: 'ko' })
+
+    const link = await screen.findByRole('link')
+    const [main, second] = link.querySelectorAll('span[lang]')
+    expect(main).toHaveTextContent('2학기 장학금 신청 안내')
+    expect(second).toHaveTextContent('Fall scholarship applications')
+    expect(screen.getByText('공지 1건')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '장학' })).toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: '공지 검색' })).toBeInTheDocument()
+  })
 })

@@ -3,9 +3,10 @@ import { render } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { vi } from 'vitest'
+import { LangContext, type Lang } from '../i18n'
 
 /** Renders one page at `url` (matched by `path`) with a fresh query cache; returns the router to inspect the URL. */
-export function renderPage(element: ReactElement, { url = '/', path = '/' } = {}) {
+export function renderPage(element: ReactElement, { url = '/', path = '/', lang = 'en' as Lang } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   const router = createMemoryRouter(
     [
@@ -15,9 +16,11 @@ export function renderPage(element: ReactElement, { url = '/', path = '/' } = {}
     { initialEntries: [url] },
   )
   render(
-    <QueryClientProvider client={client}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+    <LangContext value={{ lang, setLang: () => {} }}>
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </LangContext>,
   )
   return router
 }
