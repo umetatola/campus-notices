@@ -166,8 +166,15 @@ cd frontend && npm test
 To refresh the README screenshots: `npm run build && npx vite preview --port 4173`, then
 `node scripts/screenshots.mjs` from a folder where Playwright is installed (`npm i playwright && npx playwright install chromium`).
 
-CI (GitHub Actions) runs the backend tests, the frontend lint, tests and build, and the Docker build on every push
-and pull request.
+End-to-end smoke tests (Playwright, Chromium) run the production build in a real browser with a demo API: browse and
+search, open a notice and come back with the search kept, switch to Korean and reload, go to sign-in.
+
+```bash
+cd frontend && npx playwright install chromium && npm run e2e
+```
+
+CI (GitHub Actions) runs the backend tests, the frontend lint, tests and build, the end-to-end tests, and the Docker
+build on every push and pull request.
 
 ## Deployment
 
