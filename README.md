@@ -10,6 +10,17 @@ title and summary, and emails you when a notice matches the keywords you follow.
 
 > Status: week 4 of 4. Everything works locally and in CI; the production setup is ready and waiting for a server.
 
+<p align="center">
+  <img src="docs/screenshots/notices.png" alt="Notice list with English titles, the Korean originals underneath, deadline badges and category filters" width="640">
+</p>
+
+| Notice page | Korean interface | Phone, dark theme |
+|---|---|---|
+| <img src="docs/screenshots/notice.png" alt="Notice page with the English summary, deadline, Add to calendar link and attachments" width="300"> | <img src="docs/screenshots/notices-ko.png" alt="The notice list with the interface in Korean, Korean titles first" width="300"> | <img src="docs/screenshots/mobile-dark.png" alt="The notice list on a phone in the dark theme" width="160"> |
+
+<sub>Screenshots use real notice titles from the Ajou board with sample summaries, served by a demo API
+(<code>frontend/scripts/screenshots.mjs</code>).</sub>
+
 ## Architecture
 
 ```
@@ -140,6 +151,9 @@ cd frontend && npm test
   removed before rendering; pending summaries and missing notices.
 - Sign-in: the request carries the CSRF token from the cookie, server errors are shown, signed-in users are
   redirected. Date labels follow Korean time (a notice posted at 00:05 KST is "Today").
+
+To refresh the README screenshots: `npm run build && npx vite preview --port 4173`, then
+`node scripts/screenshots.mjs` from a folder where Playwright is installed (`npm i playwright && npx playwright install chromium`).
 
 CI (GitHub Actions) runs the backend tests, the frontend lint, tests and build, and the Docker build on every push
 and pull request.
