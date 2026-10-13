@@ -41,6 +41,15 @@ describe('NoticeDetailPage', () => {
     expect(screen.getByText(/until 17:00/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '안내문.pdf' })).toHaveAttribute('href', 'https://www.ajou.ac.kr/file/1')
     expect(screen.getByRole('link', { name: /Open the original/ })).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(screen.getByRole('link', { name: 'Add to calendar' })).toHaveAttribute('href', '/api/notices/7/calendar.ics')
+  })
+
+  it('offers no calendar link once the deadline has passed', async () => {
+    const summary = { ...detail().summary, deadline: '2020-01-31' }
+    show(detail({ summary }))
+
+    expect(await screen.findByText('Deadline passed')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Add to calendar' })).not.toBeInTheDocument()
   })
 
   it('removes scripts and event handlers from the notice body', async () => {
