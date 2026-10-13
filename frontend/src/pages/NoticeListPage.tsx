@@ -161,7 +161,7 @@ function CategoryChip(props: { label: string; sublabel?: string; selected: boole
   )
 }
 
-function NoticeRow({ notice }: { notice: NoticeItem }) {
+export function NoticeRow({ notice }: { notice: NoticeItem }) {
   const { lang, t } = useI18n()
   const due = dueLabel(notice.deadline, undefined, lang)
   // the reader's language first; the other one underneath

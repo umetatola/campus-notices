@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import NoticeDetailPage from './NoticeDetailPage'
 import { json, mockApi, renderPage } from '../test/helpers'
 import type { NoticeDetail } from '../api'
@@ -57,6 +58,37 @@ describe('NoticeDetailPage', () => {
     show(detail())
     await screen.findByRole('heading', { level: 1 })
     expect(screen.queryByText(/^Edited/)).not.toBeInTheDocument()
+  })
+
+  it('lets a signed-in user save and unsave the notice', async () => {
+    document.cookie = 'XSRF-TOKEN=t'
+    let saved = false
+    const calls: string[] = []
+    mockApi({
+      '/api/notices/7': () => json(detail()),
+      '/api/me': () => json({ email: 'me@ajou.ac.kr' }),
+      '/api/bookmarks': () => json(saved ? [{ ...detail(), titleEn: null, deadline: null }] : []),
+      '/api/bookmarks/7': (_, init) => {
+        calls.push(init?.method ?? 'GET')
+        saved = init?.method === 'PUT'
+        return new Response(null, { status: 204 })
+      },
+    })
+    renderPage(<NoticeDetailPage />, { url: '/notices/7', path: '/notices/:id' })
+
+    const button = await screen.findByRole('button', { name: /Save/ })
+    expect(button).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(button)
+    await waitFor(() => expect(screen.getByRole('button', { name: /Saved/ })).toHaveAttribute('aria-pressed', 'true'))
+    await userEvent.click(screen.getByRole('button', { name: /Saved/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Save/ })).toHaveAttribute('aria-pressed', 'false'))
+    expect(calls).toEqual(['PUT', 'DELETE'])
+  })
+
+  it('has no save button when signed out', async () => {
+    show(detail())
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.queryByRole('button', { name: /Save/ })).not.toBeInTheDocument()
   })
 
   it('offers no calendar link once the deadline has passed', async () => {

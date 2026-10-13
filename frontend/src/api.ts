@@ -76,7 +76,7 @@ function readCookie(name: string): string | null {
 }
 
 /** Writes carry the CSRF token from the XSRF-TOKEN cookie; the first write fetches the cookie. */
-async function send<T>(method: 'POST' | 'DELETE', path: string, body?: unknown): Promise<T | null> {
+async function send<T>(method: 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<T | null> {
   if (!readCookie('XSRF-TOKEN')) {
     await fetch('/api/csrf')
   }
@@ -156,6 +156,19 @@ export async function addSubscription(keyword: string): Promise<Subscription> {
 
 export function removeSubscription(id: number) {
   return send<void>('DELETE', `/api/subscriptions/${id}`)
+}
+
+/** Saved notices, most recently saved first. */
+export function fetchBookmarks() {
+  return getJson<NoticeItem[]>('/api/bookmarks')
+}
+
+export function saveBookmark(noticeId: number) {
+  return send<void>('PUT', `/api/bookmarks/${noticeId}`)
+}
+
+export function removeBookmark(noticeId: number) {
+  return send<void>('DELETE', `/api/bookmarks/${noticeId}`)
 }
 
 export interface AlertStatus {

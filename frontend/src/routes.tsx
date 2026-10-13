@@ -16,6 +16,7 @@ export const routes: RouteObject[] = [
       { path: '/sign-in', lazy: page(() => import('./pages/SignInPage')) },
       { path: '/auth/verify', lazy: page(() => import('./pages/VerifyPage')) },
       { path: '/alerts', lazy: page(() => import('./pages/AlertsPage')) },
+      { path: '/saved', lazy: page(() => import('./pages/SavedPage')) },
       { path: '/unsubscribe', lazy: page(() => import('./pages/UnsubscribePage')) },
       { path: '*', lazy: page(() => import('./pages/NotFoundPage')) },
     ],

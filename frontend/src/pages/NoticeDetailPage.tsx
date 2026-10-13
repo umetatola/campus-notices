@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router'
 import DOMPurify from 'dompurify'
-import { ApiError, fetchNotice, type Summary } from '../api'
+import { ApiError, fetchBookmarks, fetchNotice, removeBookmark, saveBookmark, type Summary } from '../api'
+import { useMe } from '../useMe'
 import { categoryName, dueLabel, postedLabel } from '../labels'
 import NotFoundPage from './NotFoundPage'
 import { translate, useI18n, type Lang } from '../i18n'
@@ -104,14 +105,17 @@ export default function NoticeDetailPage() {
                 </>
               )}
             </div>
-            <a
-              href={notice.data.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block text-sm text-accent hover:underline"
-            >
-              {t('detail.original')}
-            </a>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <a
+                href={notice.data.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-sm text-accent hover:underline"
+              >
+                {t('detail.original')}
+              </a>
+              <SaveButton noticeId={notice.data.id} />
+            </div>
           </header>
 
           <SummaryCard noticeId={notice.data.id} summary={notice.data.summary} />
@@ -206,6 +210,42 @@ function SummaryCard({ noticeId, summary }: { noticeId: number; summary: Summary
 const longDate = {
   en: new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
   ko: new Intl.DateTimeFormat('ko', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }),
+}
+
+/** Save / Saved toggle; only for signed-in users. */
+function SaveButton({ noticeId }: { noticeId: number }) {
+  const me = useMe()
+  const { t } = useI18n()
+  const queryClient = useQueryClient()
+  const bookmarks = useQuery({ queryKey: ['bookmarks'], queryFn: fetchBookmarks, enabled: !!me })
+  const saved = bookmarks.data?.some((b) => b.id === noticeId) ?? false
+  const toggle = useMutation({
+    mutationFn: (save: boolean) => (save ? saveBookmark(noticeId) : removeBookmark(noticeId)),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['bookmarks'] }),
+  })
+  if (!me || !bookmarks.isSuccess) return null
+  // show the state being asked for while the request runs
+  const pressed = toggle.isPending ? toggle.variables : saved
+  return (
+    <span className="inline-flex items-center gap-2">
+      <button
+        type="button"
+        aria-pressed={pressed}
+        disabled={toggle.isPending}
+        onClick={() => toggle.mutate(!saved)}
+        className={`rounded-md border px-2.5 py-1 text-sm font-medium ${
+          pressed ? 'border-accent bg-accent-soft text-accent' : 'border-line text-ink-2 hover:text-ink'
+        }`}
+      >
+        {pressed ? `★ ${t('detail.saved')}` : `☆ ${t('detail.save')}`}
+      </button>
+      {toggle.isError && (
+        <span role="alert" className="text-sm text-due">
+          {t('detail.saveError')}
+        </span>
+      )}
+    </span>
+  )
 }
 
 const shortDate: Record<Lang, Intl.DateTimeFormat> = {
