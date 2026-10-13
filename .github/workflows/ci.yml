@@ -28,6 +28,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       # Integration tests start PostgreSQL with Testcontainers; the runner has Docker.
       - run: ./gradlew test
+      # Testcontainers skips the integration tests without Docker; in CI that must never pass silently.
+      - name: Check that no test was skipped
+        run: |
+          python3 - <<'PY'
+          import glob, os, xml.etree.ElementTree as ET
+          rows, skipped = [], 0
+          for f in sorted(glob.glob("build/test-results/test/*.xml")):
+              s = ET.parse(f).getroot()
+              rows.append(f"| {s.get('name').rsplit('.', 1)[-1]} | {s.get('tests')} | {s.get('skipped')} | {s.get('failures')} |")
+              skipped += int(s.get("skipped"))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+              out.write("| Test class | Tests | Skipped | Failures |\n|---|---|---|---|\n" + "\n".join(rows) + "\n")
+          if skipped:
+              raise SystemExit(f"{skipped} tests were skipped; integration tests need Docker in CI")
+          PY
       - name: Keep the test report when something fails
         if: failure()
         uses: actions/upload-artifact@v7
