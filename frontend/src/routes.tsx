@@ -1,24 +1,23 @@
+import type { ComponentType } from 'react'
 import type { RouteObject } from 'react-router'
 import Layout from './pages/Layout'
 import NoticeListPage from './pages/NoticeListPage'
-import NoticeDetailPage from './pages/NoticeDetailPage'
-import NotFoundPage from './pages/NotFoundPage'
-import SignInPage from './pages/SignInPage'
-import VerifyPage from './pages/VerifyPage'
-import AlertsPage from './pages/AlertsPage'
-import UnsubscribePage from './pages/UnsubscribePage'
+
+// The notice list is the landing page and ships with the first load; every other page (and DOMPurify, which
+// only the notice page needs) is fetched when it is first opened.
+const page = (load: () => Promise<{ default: ComponentType }>) => async () => ({ Component: (await load()).default })
 
 export const routes: RouteObject[] = [
   {
     element: <Layout />,
     children: [
       { path: '/', element: <NoticeListPage /> },
-      { path: '/notices/:id', element: <NoticeDetailPage /> },
-      { path: '/sign-in', element: <SignInPage /> },
-      { path: '/auth/verify', element: <VerifyPage /> },
-      { path: '/alerts', element: <AlertsPage /> },
-      { path: '/unsubscribe', element: <UnsubscribePage /> },
-      { path: '*', element: <NotFoundPage /> },
+      { path: '/notices/:id', lazy: page(() => import('./pages/NoticeDetailPage')) },
+      { path: '/sign-in', lazy: page(() => import('./pages/SignInPage')) },
+      { path: '/auth/verify', lazy: page(() => import('./pages/VerifyPage')) },
+      { path: '/alerts', lazy: page(() => import('./pages/AlertsPage')) },
+      { path: '/unsubscribe', lazy: page(() => import('./pages/UnsubscribePage')) },
+      { path: '*', lazy: page(() => import('./pages/NotFoundPage')) },
     ],
   },
 ]

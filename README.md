@@ -121,6 +121,8 @@ React 19 + TypeScript (Vite), TanStack Query and React Router, styled with Tailw
 - Interface in English or Korean (한국어 / English switch in the header, remembered in the browser); in Korean the
   original title comes first and the English one underneath, and dates read "오늘", "10월 20일 마감".
 - Loading, empty and error states; light and dark themes; Korean text wraps between words.
+- The notice list ships with the first load; other pages (and DOMPurify, needed only on the notice page) load when
+  first opened. First load: about 120 kB of JavaScript gzipped (131.5 kB before splitting), most of it React.
 
 ## Running locally
 
