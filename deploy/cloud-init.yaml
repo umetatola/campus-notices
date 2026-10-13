@@ -1,0 +1,7 @@
+#cloud-config
+# Paste this into "Custom data" when creating the VM (Azure: Advanced tab). It runs the bootstrap script once at
+# first boot; afterwards fill in /opt/campus-notices/.env over SSH and run the script again (see docs/DEPLOY.md).
+package_update: true
+runcmd:
+  - curl -fsSL https://raw.githubusercontent.com/umetatola/campus-notices/main/deploy/bootstrap.sh -o /root/bootstrap.sh
+  - bash /root/bootstrap.sh > /var/log/campus-notices-bootstrap.log 2>&1
