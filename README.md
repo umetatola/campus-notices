@@ -167,6 +167,8 @@ cd backend && ./gradlew test
 - Integration tests use a real PostgreSQL started by Testcontainers: crawling (twice, to check it stops at known
   notices) and the HTTP API; the summary queue's edge cases (retries, giving up, edits mid-summary, expired
   locks); and sign-in, keywords and alert emails end to end. They are skipped when Docker is not running.
+- Every test run writes a coverage report (JaCoCo) to `backend/build/reports/jacoco/test/html`; CI shows coverage
+  per package in the job summary and keeps the HTML report as a download.
 
 Frontend tests (Vitest, React Testing Library, jsdom) run each page against a mocked API:
 
