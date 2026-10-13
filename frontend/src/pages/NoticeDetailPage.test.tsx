@@ -61,6 +61,14 @@ describe('NoticeDetailPage', () => {
     expect(body.querySelector('img')).not.toHaveAttribute('onerror')
   })
 
+  it('names images that have no alt text', async () => {
+    show(detail({ bodyHtml: '<p>안내</p><img src="/1.png"><img src="/2.png" alt="포스터">', bodyText: null }))
+
+    await screen.findByText('안내')
+    expect(screen.getByAltText('Notice image 1 of 2')).toBeInTheDocument()
+    expect(screen.getByAltText('포스터')).toBeInTheDocument()
+  })
+
   it('explains when the English summary is not ready yet', async () => {
     show(detail({ summary: { status: 'PENDING', titleEn: null, summaryEn: null, deadline: null, deadlineNote: null } }))
 
