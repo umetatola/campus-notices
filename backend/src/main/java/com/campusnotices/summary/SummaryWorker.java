@@ -1,5 +1,6 @@
 package com.campusnotices.summary;
 
+import com.campusnotices.Metrics;
 import com.campusnotices.notice.Attachment;
 import com.campusnotices.notice.NoticeRepository;
 import com.campusnotices.summary.Summarizer.Input;
@@ -29,13 +30,15 @@ public class SummaryWorker {
 	private final NoticeRepository notices;
 	private final SummarizerProperties props;
 	private final TransactionTemplate readOnly;
+	private final Metrics metrics;
 
 	public SummaryWorker(Summarizer summarizer, SummaryQueue queue, NoticeRepository notices,
-			SummarizerProperties props, TransactionTemplate transactions) {
+			SummarizerProperties props, TransactionTemplate transactions, Metrics metrics) {
 		this.summarizer = summarizer;
 		this.queue = queue;
 		this.notices = notices;
 		this.props = props;
+		this.metrics = metrics;
 		this.readOnly = new TransactionTemplate(transactions.getTransactionManager());
 		this.readOnly.setReadOnly(true);
 	}
@@ -92,6 +95,7 @@ public class SummaryWorker {
 				}
 			}
 		}
+		metrics.summaries(done, retrying, failed);
 		return new Result(jobs.size(), done, retrying, failed);
 	}
 

@@ -3,5 +3,11 @@
 	encode gzip
 	# browsers must use HTTPS for this site for a year (the app sets the other security headers)
 	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	# metrics are for the server itself (scrape app:8080 from inside the Docker network), not the internet
+	@internal {
+		path /actuator/*
+		not path /actuator/health
+	}
+	respond @internal 404
 	reverse_proxy app:8080
 }

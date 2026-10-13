@@ -4,6 +4,7 @@ import com.campusnotices.crawler.AjouNoticeParser.Detail;
 import com.campusnotices.crawler.AjouNoticeParser.ListEntry;
 import com.campusnotices.notice.NoticeRepository;
 import com.campusnotices.notice.ScrapedNotice;
+import com.campusnotices.Metrics;
 import com.campusnotices.notice.Notice;
 import java.net.URI;
 import java.time.Instant;
@@ -41,15 +42,17 @@ public class NoticeCrawler {
 	private final NoticeRepository notices;
 	private final NoticeWriter writer;
 	private final CrawlStatus status;
+	private final Metrics metrics;
 
 	public NoticeCrawler(CrawlerProperties props, PageFetcher fetcher, AjouNoticeParser parser,
-			NoticeRepository notices, NoticeWriter writer, CrawlStatus status) {
+			NoticeRepository notices, NoticeWriter writer, CrawlStatus status, Metrics metrics) {
 		this.props = props;
 		this.fetcher = fetcher;
 		this.parser = parser;
 		this.notices = notices;
 		this.writer = writer;
 		this.status = status;
+		this.metrics = metrics;
 	}
 
 	@Scheduled(fixedDelayString = "${crawler.interval}", initialDelayString = "${crawler.initial-delay}")
@@ -61,7 +64,9 @@ public class NoticeCrawler {
 			Result r = run();
 			log.info("Crawl finished: {} pages read, {} notices saved, {} failures",
 					r.pagesRead(), r.noticesSaved(), r.failures());
+			metrics.crawlFinished(r.noticesSaved());
 			int edited = recheckRecent();
+			metrics.noticesEdited(edited);
 			if (edited > 0) {
 				log.info("Recheck found {} edited notices", edited);
 			}
@@ -70,6 +75,7 @@ public class NoticeCrawler {
 		} catch (Exception e) {
 			log.warn("Crawl failed: {}", e.toString());
 			status.recordFailure(e);
+			metrics.crawlFailed();
 		}
 	}
 
