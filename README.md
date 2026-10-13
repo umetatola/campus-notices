@@ -90,6 +90,7 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/notices?q=&category=&page=&size=` | Notices, newest first, with English title and deadline; `q` searches Korean and English text |
+| GET | `/api/notices/feed.xml?q=&category=` | The newest 30 notices as an Atom feed, same filters as the list |
 | GET | `/api/notices/{id}` | One notice with body, attachments and its English summary |
 | GET | `/api/notices/{id}/calendar.ics` | The deadline as a calendar file (all-day event, reminder the day before); 404 without one |
 | GET | `/api/notices/categories` | Categories in use |
@@ -115,6 +116,8 @@ React 19 + TypeScript (Vite), TanStack Query and React Router, styled with Tailw
   any view can be bookmarked or shared.
 - Notice page with the English summary and deadline (with an "Add to calendar" .ics download), attachments, a link to the original, and the notice body. Bodies are HTML from the university
   site: sanitized on the server (jsoup) and again in the browser (DOMPurify) before rendering.
+- An Atom/RSS feed link under the list follows the current search and category, so any feed reader can follow
+  "scholarship" notices; the page head advertises the main feed.
 - Interface in English or Korean (한국어 / English switch in the header, remembered in the browser); in Korean the
   original title comes first and the English one underneath, and dates read "오늘", "10월 20일 마감".
 - Loading, empty and error states; light and dark themes; Korean text wraps between words.

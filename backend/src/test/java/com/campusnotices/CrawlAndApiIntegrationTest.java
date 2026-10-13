@@ -85,6 +85,11 @@ class CrawlAndApiIntegrationTest {
 
 		assertThat(mvc.get().uri("/api/notices/999999")).hasStatus(404);
 
+		assertThat(mvc.get().uri("/api/notices/feed.xml?q=AutoLand")).hasStatusOk()
+				.hasContentTypeCompatibleWith("application/atom+xml")
+				.bodyText().contains("<feed xmlns=\"http://www.w3.org/2005/Atom\">").contains("기아 AutoLand")
+				.contains("feed.xml?q=AutoLand");
+
 		// every stored notice was queued exactly once, and nothing is summarized yet
 		assertThat(queue.countByStatus(SummaryStatus.PENDING)).isEqualTo(19);
 		long id = notices.findAll().getFirst().getId();
