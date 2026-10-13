@@ -197,3 +197,8 @@ cd deploy
 cp .env.example .env     # domain, database password, SMTP account, optional Anthropic key
 docker compose up -d     # later updates: docker compose pull && docker compose up -d
 ```
+
+Step-by-step guide for a free Azure VM: [docs/DEPLOY.md](docs/DEPLOY.md). [`deploy/bootstrap.sh`](deploy/bootstrap.sh)
+sets up a fresh Ubuntu server in one command (Docker, firewall, swap, automatic security updates, DuckDNS updates,
+daily database backups) and is safe to run again; [`deploy/cloud-init.yaml`](deploy/cloud-init.yaml) runs it at the
+VM's first boot.
