@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	private final LongSupplier nanoTime;
 	private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
+	@Autowired
 	public RateLimitFilter(RateLimitProperties props) {
 		this(props, System::nanoTime);
 	}
