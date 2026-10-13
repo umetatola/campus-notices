@@ -13,6 +13,7 @@ export const routes: RouteObject[] = [
     children: [
       { path: '/', element: <NoticeListPage /> },
       { path: '/notices/:id', lazy: page(() => import('./pages/NoticeDetailPage')) },
+      { path: '/deadlines', lazy: page(() => import('./pages/DeadlinesPage')) },
       { path: '/sign-in', lazy: page(() => import('./pages/SignInPage')) },
       { path: '/auth/verify', lazy: page(() => import('./pages/VerifyPage')) },
       { path: '/alerts', lazy: page(() => import('./pages/AlertsPage')) },

@@ -112,6 +112,11 @@ export function fetchNotice(id: number) {
   return getJson<NoticeDetail>(`/api/notices/${id}`)
 }
 
+/** Notices due today or in the next `days` days, soonest first. */
+export function fetchDeadlines(days = 14) {
+  return getJson<NoticeItem[]>(`/api/notices/deadlines?days=${days}`)
+}
+
 export function fetchCategories() {
   return getJson<string[]>('/api/notices/categories')
 }

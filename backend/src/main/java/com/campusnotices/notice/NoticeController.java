@@ -6,6 +6,8 @@ import com.campusnotices.notice.NoticeDtos.NoticeItem;
 import com.campusnotices.notice.NoticeDtos.PageResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -25,6 +27,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class NoticeController {
 
 	private static final int FEED_SIZE = 30;
+	private static final ZoneId KOREA = ZoneId.of("Asia/Seoul");
 
 	private final NoticeService service;
 	private final AppProperties app;
@@ -57,6 +60,12 @@ public class NoticeController {
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
 		return service.list(category, q, page, size);
+	}
+
+	/** Notices due today or in the next {@code days} days (at most 60), soonest first. */
+	@GetMapping("/deadlines")
+	public List<NoticeItem> deadlines(@RequestParam(defaultValue = "14") int days) {
+		return service.upcomingDeadlines(days, LocalDate.now(KOREA));
 	}
 
 	@GetMapping("/{id}")

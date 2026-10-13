@@ -60,6 +60,10 @@ async function demoApi(page, { signedIn = false } = {}) {
         return signedIn ? ok({ email: 'student@ajou.ac.kr' }) : route.fulfill({ status: 401 })
       case '/api/subscriptions':
         return ok(['장학', 'internship', 'dorm', 'visa'].map((keyword, i) => ({ id: i + 1, keyword, createdAt: iso(-10) })))
+      case '/api/notices/deadlines':
+        return ok(notices.filter((n) => n.deadline).sort((a, b) => a.deadline.localeCompare(b.deadline)))
+      case '/api/bookmarks':
+        return ok(notices.slice(0, 2))
       case '/api/alerts/status':
         return ok({ paused: false })
       default:
@@ -88,6 +92,8 @@ async function shot(name, path, { width = 1100, height = 900, lang = 'en', signe
 await shot('notices.png', '/')
 await shot('notice.png', `/notices/${detail.id}`, { height: 1000 })
 await shot('alerts.png', '/alerts', { signedIn: true, height: 700 })
+await shot('deadlines.png', '/deadlines', { height: 700 })
 await shot('notices-ko.png', '/', { lang: 'ko' })
+if (process.env.EXTRA) await shot('mobile-signed-in.png', '/deadlines', { width: 375, height: 700, signedIn: true })
 await shot('mobile-dark.png', '/', { width: 390, height: 844, dark: true })
 await browser.close()

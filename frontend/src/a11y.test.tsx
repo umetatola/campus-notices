@@ -24,6 +24,7 @@ function api(signedIn: boolean) {
   mockApi({
     '/api/notices': () => json({ items: [notice], page: 0, size: 20, totalItems: 41, totalPages: 3 }),
     '/api/notices/categories': () => json(['학사', '장학']),
+    '/api/notices/deadlines': () => json([{ ...notice, deadline: '2099-12-31' }]),
     '/api/notices/7': () =>
       json({
         ...notice,
@@ -65,6 +66,7 @@ describe('accessibility (axe)', () => {
   it('notice list', () => check('/', 'Course withdrawal'))
   it('notice list in Korean', () => check('/', '[학사] 수강 철회 안내', { lang: 'ko' }))
   it('notice page', () => check('/notices/7', 'Withdraw online.'))
+  it('deadlines', () => check('/deadlines', 'Upcoming deadlines'))
   it('sign-in', () => check('/sign-in', 'Email me a sign-in link'))
   it('alerts', () => check('/alerts', 'Turn alerts back on', { signedIn: true }))
   it('saved notices', () => check('/saved', 'Saved notices', { signedIn: true }))

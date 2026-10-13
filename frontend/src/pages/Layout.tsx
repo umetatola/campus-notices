@@ -28,10 +28,13 @@ export default function Layout() {
     <div className="min-h-screen">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4">
-          <Link to="/" className="text-lg font-semibold tracking-tight text-ink">
+          <Link to="/" className="shrink-0 text-lg font-semibold tracking-tight text-ink">
             Campus Notices
           </Link>
-          <nav className="flex items-center gap-4" aria-label={t('nav.account')}>
+          <nav className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1" aria-label={t('nav.account')}>
+            <NavLink to="/deadlines" className={navLink}>
+              {t('nav.deadlines')}
+            </NavLink>
             {me ? (
               <>
                 <NavLink to="/saved" className={navLink}>

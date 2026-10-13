@@ -99,6 +99,7 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 | GET | `/api/notices/feed.xml?q=&category=` | The newest 30 notices as an Atom feed, same filters as the list |
 | GET | `/api/notices/{id}` | One notice with body, attachments and its English summary |
 | GET | `/api/notices/{id}/calendar.ics` | The deadline as a calendar file (all-day event, reminder the day before); 404 without one |
+| GET | `/api/notices/deadlines?days=14` | Notices due today or in the next N days (max 60), soonest first |
 | GET | `/api/notices/categories` | Categories in use |
 | POST | `/api/auth/request-link` | Email a sign-in link (always 202) |
 | POST | `/api/auth/verify` | Exchange a link token for a session |

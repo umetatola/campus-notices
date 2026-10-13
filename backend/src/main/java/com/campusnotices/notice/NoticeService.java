@@ -4,7 +4,9 @@ import com.campusnotices.notice.NoticeDtos.NoticeDetail;
 import com.campusnotices.notice.NoticeDtos.NoticeItem;
 import com.campusnotices.notice.NoticeDtos.PageResponse;
 import com.campusnotices.summary.NoticeSummaryRepository;
+import java.time.LocalDate;
 import java.util.List;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class NoticeService {
 
 	public static final int MAX_PAGE_SIZE = 50;
+	static final int MAX_DEADLINE_DAYS = 60;
+	static final int MAX_DEADLINES = 100;
 
 	private final NoticeRepository notices;
 	private final NoticeSummaryRepository summaries;
@@ -31,6 +35,12 @@ public class NoticeService {
 				PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE)));
 		return new PageResponse<>(result.map(NoticeItem::from).getContent(), result.getNumber(),
 				result.getSize(), result.getTotalElements(), result.getTotalPages());
+	}
+
+	/** Notices due today or within {@code days} days (Korean dates), soonest first. */
+	public List<NoticeItem> upcomingDeadlines(int days, LocalDate today) {
+		return notices.findDeadlinesBetween(today, today.plusDays(Math.clamp(days, 0, MAX_DEADLINE_DAYS)),
+				Limit.of(MAX_DEADLINES)).stream().map(NoticeItem::from).toList();
 	}
 
 	public NoticeDetail get(long id) {
