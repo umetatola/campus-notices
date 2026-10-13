@@ -43,6 +43,34 @@ jobs:
           if skipped:
               raise SystemExit(f"{skipped} tests were skipped; integration tests need Docker in CI")
           PY
+      - name: Coverage summary
+        run: |
+          python3 - <<'PY'
+          import os, xml.etree.ElementTree as ET
+          root = ET.parse("build/reports/jacoco/test/jacocoTestReport.xml").getroot()
+          def pct(el, kind):
+              c = next((c for c in el.findall("counter") if c.get("type") == kind), None)
+              if c is None:
+                  return "–", 0
+              covered, missed = int(c.get("covered")), int(c.get("missed"))
+              return f"{100 * covered / (covered + missed):.0f}%", covered + missed
+          rows = []
+          for p in sorted(root.findall("package"), key=lambda p: p.get("name")):
+              line, n = pct(p, "LINE")
+              branch, _ = pct(p, "BRANCH")
+              rows.append(f"| {p.get('name').replace('/', '.')} | {line} | {branch} | {n} |")
+          total, _ = pct(root, "LINE")
+          total_branch, _ = pct(root, "BRANCH")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+              out.write(f"\n### Coverage: {total} of lines, {total_branch} of branches\n\n"
+                        "| Package | Lines | Branches | Lines total |\n|---|---|---|---|\n" + "\n".join(rows) + "\n")
+          print(f"Line coverage {total}, branch coverage {total_branch}")
+          PY
+      - name: Keep the coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-coverage
+          path: backend/build/reports/jacoco/test/html
       - name: Keep the test report when something fails
         if: failure()
         uses: actions/upload-artifact@v7
