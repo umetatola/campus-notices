@@ -117,6 +117,10 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 | GET | `/actuator/health` | Health check |
 | GET | `/actuator/prometheus` | Prometheus metrics; only from inside the server (Caddy answers 404 from outside) |
 
+Every `/api` request counts against a per-IP limit (token bucket, in memory): 5 sign-in emails, 60 searches/feeds
+and 300 other requests a minute by default (`rate-limit.*`). Over the limit the API answers `429` with `Retry-After`.
+Behind Caddy the client address comes from `X-Forwarded-For`.
+
 Besides the standard JVM, HTTP and database pool metrics, the app counts its own work:
 
 | Metric | Meaning |

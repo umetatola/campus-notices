@@ -29,6 +29,8 @@ spring:
       mail.smtp.starttls.enable: ${MAIL_STARTTLS:false}
 
 server:
+  # behind Caddy: take the client address from X-Forwarded-For (trusted from private networks only)
+  forward-headers-strategy: native
   servlet:
     session:
       timeout: 30d
@@ -92,3 +94,10 @@ management:
       exposure:
         # prometheus is for the server only: Caddy answers 404 for it from outside
         include: health,info,prometheus
+
+# Requests per minute per client IP; over the limit the API answers 429 with Retry-After.
+rate-limit:
+  enabled: true
+  sign-in-per-minute: 5
+  search-per-minute: 60
+  api-per-minute: 300
