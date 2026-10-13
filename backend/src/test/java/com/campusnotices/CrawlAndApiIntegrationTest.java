@@ -56,7 +56,13 @@ class CrawlAndApiIntegrationTest {
 
 	@Test
 	void crawlsOnceThenStopsAtKnownNotices() throws Exception {
+		// crawler.enabled=false here, so nothing counts as delayed; before any crawl there is no time yet
+		assertThat(mvc.get().uri("/api/status")).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.updatesDelayed", v -> v.assertThat().isEqualTo(false));
+
 		NoticeCrawler.Result first = crawler.run();
+		assertThat(mvc.get().uri("/api/status")).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.lastUpdatedAt", v -> v.assertThat().isNotNull());
 		assertThat(first.noticesSaved()).isEqualTo(19);
 		assertThat(first.failures()).isZero();
 		assertThat(notices.count()).isEqualTo(19);

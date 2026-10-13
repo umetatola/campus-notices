@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { categoryName, dueLabel, postedLabel } from './labels'
+import { categoryName, dueLabel, postedLabel, timeAgo } from './labels'
 
 // 2026-10-13 23:30 in Korea is still 2026-10-13 14:30 UTC: labels must follow Korean dates.
 const now = new Date('2026-10-13T14:30:00Z')
@@ -43,5 +43,14 @@ describe('Korean labels', () => {
     expect(dueLabel('2026-10-14', now, 'ko')).toBe('내일 마감')
     expect(dueLabel('2026-10-20', now, 'ko')).toBe('10월 20일 마감')
     expect(categoryName('장학', 'ko')).toBe('장학')
+  })
+})
+
+describe('timeAgo', () => {
+  it('says how long ago in either language', () => {
+    expect(timeAgo('2026-10-13T14:29:40Z', now)).toBe('now')
+    expect(timeAgo('2026-10-13T14:25:00Z', now)).toBe('5 minutes ago')
+    expect(timeAgo('2026-10-13T12:00:00Z', now)).toBe('2 hours ago')
+    expect(timeAgo('2026-10-13T14:25:00Z', now, 'ko')).toBe('5분 전')
   })
 })

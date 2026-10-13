@@ -42,6 +42,9 @@ React (Vite + TypeScript)  ──REST──►  Spring Boot 4 (Java 21)
 - Each notice is stored once (unique on source + article number) with a SHA-256 content hash, so later edits
   can be detected. Every notice is written in its own transaction: one broken page can't roll back a whole run.
 - Image-only and attachment-only notices (common on this board) are kept with absolute image and file links.
+- Each run is recorded (`crawl_status`). The web app's footer shows "Notices updated 5 minutes ago", or a warning
+  when no crawl has succeeded for three intervals; the server logs the same. A down university site is not reported
+  as an unhealthy app, so it can't trigger container restarts.
 
 ### English summaries
 
@@ -99,6 +102,7 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 | POST | `/api/alerts/unsubscribe?token=` | Pause alert emails (one-click, from the email link; no session needed) |
 | GET | `/api/alerts/status` | Whether alerts are paused (signed in) |
 | POST | `/api/alerts/resume` | Turn alerts back on (signed in) |
+| GET | `/api/status` | When notices were last updated, and whether updates are delayed (no crawl for 3 intervals) |
 | GET | `/api/docs` · `/api/openapi` | API documentation (Swagger UI) and OpenAPI spec |
 | GET | `/actuator/health` | Health check |
 
