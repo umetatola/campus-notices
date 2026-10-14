@@ -8,18 +8,38 @@ University announcements (course withdrawal deadlines, scholarships, dorm and jo
 the school website and written in Korean. Campus Notices collects them automatically, gives each one an English
 title and summary, and emails you when a notice matches the keywords you follow.
 
-> Status: week 4 of 4. Everything works locally and in CI; the production setup is ready and waiting for a server.
+> Status: feature-complete for a first release. Everything runs in CI (unit, integration with real PostgreSQL,
+> browser end-to-end and accessibility tests); the production setup is ready and waiting for a server.
 
 <p align="center">
   <img src="docs/screenshots/notices.png" alt="Notice list with English titles, the Korean originals underneath, deadline badges and category filters" width="640">
 </p>
 
-| Notice page | Korean interface | Phone, dark theme |
-|---|---|---|
-| <img src="docs/screenshots/notice.png" alt="Notice page with the English summary, deadline, Add to calendar link and attachments" width="300"> | <img src="docs/screenshots/notices-ko.png" alt="The notice list with the interface in Korean, Korean titles first" width="300"> | <img src="docs/screenshots/mobile-dark.png" alt="The notice list on a phone in the dark theme" width="160"> |
+| Notice page | Deadlines | Korean interface | Phone, dark theme |
+|---|---|---|---|
+| <img src="docs/screenshots/notice.png" alt="Notice page with the English summary, deadline, Add to calendar link and attachments" width="300"> | <img src="docs/screenshots/deadlines.png" alt="Upcoming deadlines page, soonest first, with a 2 weeks / 30 days switch" width="300"> | <img src="docs/screenshots/notices-ko.png" alt="The notice list with the interface in Korean, Korean titles first" width="300"> | <img src="docs/screenshots/mobile-dark.png" alt="The notice list on a phone in the dark theme" width="160"> |
 
 <sub>Screenshots use real notice titles from the Ajou board with sample summaries, served by a demo API
 (<code>frontend/scripts/screenshots.mjs</code>).</sub>
+
+## Features
+
+**For students**
+- Every notice from the main Ajou board, searchable in Korean or English, with the search words highlighted
+- An English title and summary per notice, with the deadline pulled out and an **Add to calendar** (.ics) button
+- **Deadlines** page: everything due in the next 2 weeks or 30 days, soonest first
+- **Edited** badge when the university changes a notice after posting it; the summary is rewritten
+- **Saved** notices, and "more from this office" on every notice page
+- **Keyword alerts** by email, as they come or as one daily digest after 08:00 KST, with one-click unsubscribe
+- Korean / English interface, dark mode, works on phones and can be installed like an app; Atom feeds for any search
+
+**Under the hood**
+- Polite crawler (robots.txt, 1 request/s) that re-checks the last week's notices for edits
+- Summaries through a PostgreSQL job queue with retries, backoff and locking (`FOR UPDATE SKIP LOCKED`)
+- Email sign-in links (no passwords), CSRF protection, strict security headers, per-IP rate limits
+- Prometheus metrics, freshness status in the footer, OpenAPI docs at `/api/docs`
+- CI: backend tests against real PostgreSQL (Testcontainers), coverage report, frontend unit + axe accessibility
+  tests, Playwright end-to-end tests, Docker image; Dependabot for updates
 
 ## Architecture
 
