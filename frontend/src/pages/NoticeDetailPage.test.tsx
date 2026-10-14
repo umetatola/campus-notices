@@ -91,6 +91,18 @@ describe('NoticeDetailPage', () => {
     expect(screen.queryByRole('button', { name: /Save/ })).not.toBeInTheDocument()
   })
 
+  it('lists more notices from the same office', async () => {
+    mockApi({
+      '/api/notices/7': () => json(detail()),
+      '/api/notices/7/more-from-department': () =>
+        json([{ ...detail({ id: 8, title: '졸업 사정 안내' }), titleEn: 'Graduation review', deadline: null }]),
+    })
+    renderPage(<NoticeDetailPage />, { url: '/notices/7', path: '/notices/:id' })
+
+    expect(await screen.findByRole('heading', { name: 'More from 학사팀' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Graduation review/ })).toHaveAttribute('href', '/notices/8')
+  })
+
   it('offers no calendar link once the deadline has passed', async () => {
     const summary = { ...detail().summary, deadline: '2020-01-31' }
     show(detail({ summary }))

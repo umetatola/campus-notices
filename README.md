@@ -98,6 +98,7 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 | GET | `/api/notices?q=&category=&page=&size=` | Notices, newest first, with English title and deadline; `q` searches Korean and English text |
 | GET | `/api/notices/feed.xml?q=&category=` | The newest 30 notices as an Atom feed, same filters as the list |
 | GET | `/api/notices/{id}` | One notice with body, attachments and its English summary |
+| GET | `/api/notices/{id}/more-from-department` | Up to 5 newest other notices from the same office |
 | GET | `/api/notices/{id}/calendar.ics` | The deadline as a calendar file (all-day event, reminder the day before); 404 without one |
 | GET | `/api/notices/deadlines?days=14` | Notices due today or in the next N days (max 60), soonest first |
 | GET | `/api/notices/categories` | Categories in use |

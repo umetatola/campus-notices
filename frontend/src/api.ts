@@ -117,6 +117,11 @@ export function fetchDeadlines(days = 14) {
   return getJson<NoticeItem[]>(`/api/notices/deadlines?days=${days}`)
 }
 
+/** The latest other notices from the same department (at most 5). */
+export function fetchMoreFromDepartment(id: number) {
+  return getJson<NoticeItem[]>(`/api/notices/${id}/more-from-department`)
+}
+
 export function fetchCategories() {
   return getJson<string[]>('/api/notices/categories')
 }

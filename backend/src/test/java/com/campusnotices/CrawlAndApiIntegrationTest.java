@@ -100,6 +100,21 @@ class CrawlAndApiIntegrationTest {
 
 		assertThat(mvc.get().uri("/api/notices/999999")).hasStatus(404);
 
+		// "more from this office": other notices of the same department, newest first, at most 5
+		Notice withOffice = notices.findAll().stream().filter(n -> n.getDepartment() != null)
+				.max(java.util.Comparator.comparingLong(n -> notices.findAll().stream()
+						.filter(o -> n.getDepartment().equals(o.getDepartment())).count()))
+				.orElseThrow();
+		List<Notice> sameOffice = notices.findAll().stream()
+				.filter(o -> withOffice.getDepartment().equals(o.getDepartment()) && !o.getId().equals(withOffice.getId()))
+				.sorted(java.util.Comparator.comparing(Notice::getPostedOn).thenComparing(Notice::getId).reversed())
+				.limit(5).toList();
+		assertThat(sameOffice).isNotEmpty();
+		assertThat(mvc.get().uri("/api/notices/" + withOffice.getId() + "/more-from-department")).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$[*].id", v -> v.assertThat().asArray()
+						.containsExactlyElementsOf(sameOffice.stream().map(o -> o.getId().intValue()).toList()));
+		assertThat(mvc.get().uri("/api/notices/999999/more-from-department")).hasStatus(404);
+
 		assertThat(mvc.get().uri("/api/notices/feed.xml?q=AutoLand")).hasStatusOk()
 				.hasContentTypeCompatibleWith("application/atom+xml")
 				.bodyText().contains("<feed xmlns=\"http://www.w3.org/2005/Atom\">").contains("기아 AutoLand")

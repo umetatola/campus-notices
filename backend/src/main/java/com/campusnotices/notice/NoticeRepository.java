@@ -36,6 +36,17 @@ public interface NoticeRepository extends JpaRepository<Notice, Long> {
 			countQuery = "select count(n) from Notice n left join NoticeSummary s on s.noticeId = n.id " + SEARCH_WHERE)
 	Page<NoticeListRow> search(@Param("category") String category, @Param("q") String q, Pageable pageable);
 
+	/** The newest notices from one department, leaving one notice out. */
+	@Query("""
+			select new com.campusnotices.notice.NoticeListRow(n.id, n.title, n.category, n.department,
+			       n.postedOn, n.pinned, n.url, s.titleEn, s.deadline, n.editedAt)
+			from Notice n left join NoticeSummary s on s.noticeId = n.id
+			where n.department = :department and n.id <> :exclude
+			order by n.postedOn desc, n.id desc
+			""")
+	List<NoticeListRow> findLatestFromDepartment(@Param("department") String department,
+			@Param("exclude") long exclude, org.springframework.data.domain.Limit limit);
+
 	/** Notices whose deadline (from the summary) falls between the two dates, soonest first. */
 	@Query("""
 			select new com.campusnotices.notice.NoticeListRow(n.id, n.title, n.category, n.department,
