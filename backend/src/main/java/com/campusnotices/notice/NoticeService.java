@@ -19,6 +19,7 @@ public class NoticeService {
 	public static final int MAX_PAGE_SIZE = 50;
 	static final int MAX_DEADLINE_DAYS = 60;
 	static final int MAX_DEADLINES = 100;
+	static final int MORE_FROM_DEPARTMENT = 5;
 
 	private final NoticeRepository notices;
 	private final NoticeSummaryRepository summaries;
@@ -41,6 +42,16 @@ public class NoticeService {
 	public List<NoticeItem> upcomingDeadlines(int days, LocalDate today) {
 		return notices.findDeadlinesBetween(today, today.plusDays(Math.clamp(days, 0, MAX_DEADLINE_DAYS)),
 				Limit.of(MAX_DEADLINES)).stream().map(NoticeItem::from).toList();
+	}
+
+	/** Up to {@code MORE_FROM_DEPARTMENT} newer-first notices from the same office; empty without a department. */
+	public List<NoticeItem> moreFromDepartment(long id) {
+		Notice notice = notices.findById(id).orElseThrow(() -> new NoticeNotFoundException(id));
+		if (notice.getDepartment() == null || notice.getDepartment().isBlank()) {
+			return List.of();
+		}
+		return notices.findLatestFromDepartment(notice.getDepartment(), id, Limit.of(MORE_FROM_DEPARTMENT)).stream()
+				.map(NoticeItem::from).toList();
 	}
 
 	public NoticeDetail get(long id) {

@@ -2,10 +2,11 @@ import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router'
 import DOMPurify from 'dompurify'
-import { ApiError, fetchBookmarks, fetchNotice, removeBookmark, saveBookmark, type Summary } from '../api'
+import { ApiError, fetchBookmarks, fetchMoreFromDepartment, fetchNotice, removeBookmark, saveBookmark, type Summary } from '../api'
 import { useMe } from '../useMe'
 import { categoryName, dueLabel, postedLabel } from '../labels'
 import NotFoundPage from './NotFoundPage'
+import { NoticeRow } from './NoticeListPage'
 import { translate, useI18n, type Lang } from '../i18n'
 
 export default function NoticeDetailPage() {
@@ -154,6 +155,10 @@ export default function NoticeDetailPage() {
               dangerouslySetInnerHTML={{ __html: bodyHtml }}
             />
           )}
+
+          {notice.data.department && (
+            <MoreFromDepartment noticeId={notice.data.id} department={notice.data.department} />
+          )}
         </>
       )}
     </article>
@@ -210,6 +215,25 @@ function SummaryCard({ noticeId, summary }: { noticeId: number; summary: Summary
 const longDate = {
   en: new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
   ko: new Intl.DateTimeFormat('ko', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }),
+}
+
+/** The latest other notices from the same office; hidden when there are none or loading fails. */
+function MoreFromDepartment({ noticeId, department }: { noticeId: number; department: string }) {
+  const { t } = useI18n()
+  const more = useQuery({ queryKey: ['more-from-department', noticeId], queryFn: () => fetchMoreFromDepartment(noticeId) })
+  if (!more.data?.length) return null
+  return (
+    <section className="space-y-2" aria-labelledby="more-from-department">
+      <h2 id="more-from-department" className="text-sm font-semibold text-ink-2">
+        {t('detail.moreFrom', { department })}
+      </h2>
+      <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+        {more.data.map((n) => (
+          <NoticeRow key={n.id} notice={n} />
+        ))}
+      </ul>
+    </section>
+  )
 }
 
 /** Save / Saved toggle; only for signed-in users. */

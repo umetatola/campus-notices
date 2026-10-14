@@ -24,6 +24,7 @@ function api(signedIn: boolean) {
   mockApi({
     '/api/notices': () => json({ items: [notice], page: 0, size: 20, totalItems: 41, totalPages: 3 }),
     '/api/notices/categories': () => json(['학사', '장학']),
+    '/api/notices/7/more-from-department': () => json([{ ...notice, id: 9 }]),
     '/api/notices/deadlines': () => json([{ ...notice, deadline: '2099-12-31' }]),
     '/api/notices/7': () =>
       json({

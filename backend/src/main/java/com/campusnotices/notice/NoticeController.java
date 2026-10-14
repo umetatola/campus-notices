@@ -73,6 +73,12 @@ public class NoticeController {
 		return service.get(id);
 	}
 
+	/** The latest other notices from the same department (at most 5); 404 for an unknown notice. */
+	@GetMapping("/{id}/more-from-department")
+	public List<NoticeItem> moreFromDepartment(@PathVariable long id) {
+		return service.moreFromDepartment(id);
+	}
+
 	/** The deadline as a calendar file (all-day event + reminder the day before); 404 when there is none. */
 	@GetMapping("/{id}/calendar.ics")
 	public ResponseEntity<String> calendar(@PathVariable long id) {
