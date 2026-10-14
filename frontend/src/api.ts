@@ -176,8 +176,11 @@ export function removeBookmark(noticeId: number) {
   return send<void>('DELETE', `/api/bookmarks/${noticeId}`)
 }
 
+export type AlertFrequency = 'INSTANT' | 'DAILY'
+
 export interface AlertStatus {
   paused: boolean
+  frequency: AlertFrequency
 }
 
 /** Pauses alert emails; authorized by the token from the email link (works signed out). */
@@ -187,6 +190,11 @@ export function unsubscribe(token: string) {
 
 export function fetchAlertStatus() {
   return getJson<AlertStatus>('/api/alerts/status')
+}
+
+/** Instant emails, or one daily digest after 08:00 Korean time. */
+export async function setAlertFrequency(frequency: AlertFrequency): Promise<AlertStatus> {
+  return (await send<AlertStatus>('PUT', '/api/alerts/frequency', { frequency }))!
 }
 
 export async function resumeAlerts(): Promise<AlertStatus> {

@@ -37,7 +37,7 @@ function api(signedIn: boolean) {
       }),
     '/api/me': () => (signedIn ? json({ email: 'me@ajou.ac.kr' }) : new Response(null, { status: 401 })),
     '/api/subscriptions': () => json([{ id: 1, keyword: '장학', createdAt: '2026-10-01T00:00:00Z' }]),
-    '/api/alerts/status': () => json({ paused: true }),
+    '/api/alerts/status': () => json({ paused: true, frequency: 'INSTANT' }),
     '/api/bookmarks': () => json([notice]),
     '/api/status': () => json({ lastUpdatedAt: '2026-10-01T00:00:00Z', updatesDelayed: false }),
   })

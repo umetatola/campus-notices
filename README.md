@@ -112,6 +112,7 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 | POST | `/api/alerts/unsubscribe?token=` | Pause alert emails (one-click, from the email link; no session needed) |
 | GET | `/api/alerts/status` | Whether alerts are paused (signed in) |
 | POST | `/api/alerts/resume` | Turn alerts back on (signed in) |
+| PUT | `/api/alerts/frequency` | `INSTANT` emails or one `DAILY` digest after 08:00 Korean time (signed in) |
 | GET | `/api/status` | When notices were last updated, and whether updates are delayed (no crawl for 3 intervals) |
 | GET | `/api/docs` · `/api/openapi` | API documentation (Swagger UI) and OpenAPI spec |
 | GET | `/actuator/health` | Health check |

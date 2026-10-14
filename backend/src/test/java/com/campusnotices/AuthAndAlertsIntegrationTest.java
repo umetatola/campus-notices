@@ -11,6 +11,8 @@ import com.campusnotices.notice.Notice;
 import com.campusnotices.notice.ScrapedNotice;
 import com.campusnotices.summary.Summarizer;
 import com.campusnotices.summary.SummaryQueue;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -230,6 +232,36 @@ class AuthAndAlertsIntegrationTest {
 		// nothing new: no second email
 		matcher.matchNewNotices(100);
 		assertThat(sender.sendPending(50)).isZero();
+	}
+
+	@Test
+	void dailyDigestWaitsForTheNextMorning() {
+		MockHttpSession session = signIn("erin@ajou.ac.kr");
+		assertThat(mvc.get().uri("/api/alerts/status").session(session)).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.frequency", v -> v.assertThat().isEqualTo("INSTANT"));
+		assertThat(mvc.put().uri("/api/alerts/frequency").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON).content("{\"frequency\":\"WEEKLY\"}"))
+				.hasStatus(400);
+		assertThat(mvc.put().uri("/api/alerts/frequency").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON).content("{\"frequency\":\"DAILY\"}"))
+				.hasStatusOk().bodyJson().hasPathSatisfying("$.frequency", v -> v.assertThat().isEqualTo("DAILY"));
+		assertThat(mvc.post().uri("/api/subscriptions").session(session).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON).content("{\"keyword\":\"giraffe\"}"))
+				.hasStatus(201);
+
+		Notice notice = save("700001", "[행사] giraffe 특강", "giraffe");
+		matcher.matchNewNotices(100);
+		mail.sent.clear();
+
+		// matched, but the daily email waits for the next 08:00 in Korea
+		Instant now = Instant.now();
+		assertThat(sender.sendPending(50, now)).isZero();
+		assertThat(sender.sendPending(50, now.plus(Duration.ofDays(1)))).isEqualTo(1);
+		assertThat(mail.sent).singleElement().satisfies(email -> {
+			assertThat(email.to()).isEqualTo("erin@ajou.ac.kr");
+			assertThat(email.text()).contains("/notices/" + notice.getId());
+		});
+		assertThat(sender.sendPending(50, now.plus(Duration.ofDays(1)))).isZero();
 	}
 
 	@Test
