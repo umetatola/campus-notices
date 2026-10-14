@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
+import Highlight from '../Highlight'
 import { fetchCategories, fetchNotices, type NoticeItem } from '../api'
 import { categoryName, dueLabel, postedLabel } from '../labels'
 import { useI18n } from '../i18n'
@@ -79,7 +80,7 @@ export default function NoticeListPage() {
             }`}
           >
             {notices.data.items.map((n) => (
-              <NoticeRow key={n.id} notice={n} />
+              <NoticeRow key={n.id} notice={n} query={q} />
             ))}
           </ul>
           <Pager
@@ -161,7 +162,7 @@ export function CategoryChip(props: { label: string; sublabel?: string; selected
   )
 }
 
-export function NoticeRow({ notice }: { notice: NoticeItem }) {
+export function NoticeRow({ notice, query }: { notice: NoticeItem; query?: string }) {
   const { lang, t } = useI18n()
   const due = dueLabel(notice.deadline, undefined, lang)
   // the reader's language first; the other one underneath
@@ -181,11 +182,11 @@ export function NoticeRow({ notice }: { notice: NoticeItem }) {
           )}
           <div className="min-w-0">
             <span lang={main === notice.title ? 'ko' : 'en'} className="font-medium leading-snug text-ink">
-              {main}
+              <Highlight text={main} query={query} />
             </span>
             {second && (
               <span lang={second === notice.title ? 'ko' : 'en'} className="mt-0.5 block text-sm leading-snug text-ink-2">
-                {second}
+                <Highlight text={second} query={query} />
               </span>
             )}
           </div>

@@ -59,6 +59,14 @@ describe('NoticeListPage', () => {
     expect(within(screen.getAllByRole('listitem')[0]).getByText('Edited')).toBeInTheDocument()
   })
 
+  it('highlights the searched words in the results', async () => {
+    api(() => page([notice({})]))
+    renderPage(<NoticeListPage />, { url: '/?q=scholarship' })
+
+    await screen.findByText('scholarship', { selector: 'mark' })
+    expect(document.querySelectorAll('mark')).toHaveLength(1)
+  })
+
   it('searches after typing stops and keeps the query in the URL', async () => {
     const fetch = api((url) => page(url.searchParams.get('q') ? [] : [notice({})]))
     const router = renderPage(<NoticeListPage />)
