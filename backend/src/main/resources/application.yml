@@ -31,6 +31,9 @@ spring:
 server:
   # behind Caddy: take the client address from X-Forwarded-For (trusted from private networks only)
   forward-headers-strategy: native
+  # the web app manifest (installing the site on a phone) needs its own type
+  mime-mappings:
+    webmanifest: application/manifest+json
   servlet:
     session:
       timeout: 30d
