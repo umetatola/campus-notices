@@ -9,7 +9,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # 2. Backend, with the web app in its static resources
-FROM eclipse-temurin:21-jdk AS api
+FROM eclipse-temurin:24-jdk AS api
 WORKDIR /app
 COPY backend/gradlew backend/settings.gradle backend/build.gradle ./
 COPY backend/gradle ./gradle
@@ -21,7 +21,7 @@ RUN ./gradlew bootJar --no-daemon -q -x test && cp build/libs/*[!n].jar app.jar
 RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
 
 # 3. Runtime: JRE only (Alpine keeps the image small), non-root user
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:24-jre-alpine
 RUN adduser -S -u 1001 app
 WORKDIR /app
 COPY --from=api /app/extracted/dependencies/ ./
