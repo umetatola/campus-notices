@@ -6,6 +6,7 @@ import { fetchCategories, fetchNotices, fetchStatus, type NoticeItem } from '../
 import { categoryName, dueLabel, kstDate, postedLabel, timeAgo } from '../labels'
 import { categoryVars, sortCategories } from '../categories'
 import { CategoryIcon } from '../CategoryIcon'
+import { StatusCard } from '../StatusCard'
 import { useI18n } from '../i18n'
 import { useEnglish } from '../translate'
 
@@ -87,21 +88,18 @@ export default function NoticeListPage() {
       {notices.isPending ? (
         <ListSkeleton />
       ) : notices.isError ? (
-        <div className="rounded-lg border border-line bg-surface p-6 text-center">
-          <p className="font-medium">{t('list.loadError')}</p>
-          <p className="mt-1 text-sm text-ink-2">{t('list.loadErrorHint')}</p>
-          <button
-            onClick={() => notices.refetch()}
-            className="btn-primary mt-4 rounded-full px-5 py-2 text-sm font-medium"
-          >
-            {t('common.tryAgain')}
-          </button>
-        </div>
+        <StatusCard
+          kind="error"
+          title={t('list.loadError')}
+          hint={t('list.loadErrorHint')}
+          action={
+            <button onClick={() => notices.refetch()} className="btn-primary mt-5 rounded-full px-5 py-2 text-sm font-medium">
+              {t('common.tryAgain')}
+            </button>
+          }
+        />
       ) : notices.data.items.length === 0 ? (
-        <div className="rounded-lg border border-line bg-surface p-8 text-center">
-          <p className="font-medium">{t('list.empty')}</p>
-          <p className="mt-1 text-sm text-ink-2">{t('list.emptyHint')}</p>
-        </div>
+        <StatusCard kind="empty" title={t('list.empty')} hint={t('list.emptyHint')} />
       ) : (
         <>
           <p className={landing ? 'sr-only' : 'text-sm text-muted'} aria-live="polite">
@@ -340,9 +338,12 @@ function ListSkeleton() {
   return (
     <ul className="divide-y divide-line rounded-lg border border-line bg-surface" aria-label={t('list.loading')}>
       {Array.from({ length: 6 }, (_, i) => (
-        <li key={i} className="space-y-2 px-4 py-4">
-          <div className="h-4 w-3/4 animate-pulse rounded bg-line" />
-          <div className="h-3 w-1/3 animate-pulse rounded bg-line" />
+        <li key={i} className="flex gap-3.5 px-4 py-4 sm:px-5">
+          <div className="size-10 shrink-0 animate-pulse rounded-xl bg-line" />
+          <div className="flex-1 space-y-2.5 pt-1">
+            <div className="h-4 animate-pulse rounded bg-line" style={{ width: `${70 - (i % 3) * 12}%` }} />
+            <div className="h-3 w-1/3 animate-pulse rounded bg-line" />
+          </div>
         </li>
       ))}
     </ul>

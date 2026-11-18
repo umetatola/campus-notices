@@ -5,6 +5,7 @@ import { useI18n } from '../i18n'
 import { DeadlineCalendar } from './DeadlineCalendar'
 import { NoticeRow } from './NoticeListPage'
 import { Segmented } from '../Segmented'
+import { StatusCard } from '../StatusCard'
 
 const RANGES = [14, 30] as const
 /** The calendar asks for the longest range the API allows. */
@@ -57,15 +58,11 @@ export default function DeadlinesPage() {
       {deadlines.isPending ? (
         <p className="py-8 text-center text-ink-2">{t('deadlines.loading')}</p>
       ) : deadlines.isError ? (
-        <p role="alert" className="text-ink-2">
-          {t('deadlines.loadError')}
-        </p>
+        <StatusCard kind="error" alert title={t('deadlines.loadError')} />
       ) : calendar ? (
         <DeadlineCalendar notices={deadlines.data} days={CALENDAR_DAYS} />
       ) : deadlines.data.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-line px-4 py-10 text-center text-ink-2">
-          {t('deadlines.empty')}
-        </p>
+        <StatusCard kind="calendar" title={t('deadlines.empty')} />
       ) : (
         <ul
           className={`divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface ${
