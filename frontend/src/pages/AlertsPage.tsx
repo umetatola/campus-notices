@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Navigate } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import {
   addSubscription,
   fetchAlertStatus,
   fetchSubscriptions,
+  previewKeyword,
   removeSubscription,
   resumeAlerts,
   setAlertFrequency,
@@ -16,14 +17,35 @@ import { useI18n } from '../i18n'
 
 const SUGGESTIONS = ['scholarship', '장학', 'dorm', '기숙사', 'internship', 'visa', 'graduation', '수강']
 const MAX_KEYWORDS = 20
+const PREVIEW_MIN_LENGTH = 2
+const PREVIEW_DELAY_MS = 400
+
+/** `value`, but only after it has stopped changing for `ms`. */
+function useDebounced(value: string, ms: number) {
+  const [settled, setSettled] = useState(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(value), ms)
+    return () => clearTimeout(timer)
+  }, [value, ms])
+  return settled
+}
 
 export default function AlertsPage() {
   const me = useMe()
   const { t } = useI18n()
   const queryClient = useQueryClient()
   const [keyword, setKeyword] = useState('')
+  const typed = useDebounced(keyword.trim().replace(/\s+/g, ' '), PREVIEW_DELAY_MS)
 
   const subscriptions = useQuery({ queryKey: ['subscriptions'], queryFn: fetchSubscriptions, enabled: !!me })
+  const alreadyFollowed = (subscriptions.data ?? []).some((s) => s.keyword.toLowerCase() === typed.toLowerCase())
+  const preview = useQuery({
+    queryKey: ['keyword-preview', typed.toLowerCase()],
+    queryFn: () => previewKeyword(typed),
+    enabled: !!me && typed.length >= PREVIEW_MIN_LENGTH && !alreadyFollowed,
+    staleTime: 60_000,
+  })
+  const showPreview = preview.data && typed.length >= PREVIEW_MIN_LENGTH && keyword.trim() !== '' && !alreadyFollowed
   const status = useQuery({ queryKey: ['alert-status'], queryFn: fetchAlertStatus, enabled: !!me })
   const resume = useMutation({
     mutationFn: resumeAlerts,
@@ -111,6 +133,34 @@ export default function AlertsPage() {
           {add.error.message}
         </p>
       )}
+      <div aria-live="polite" className="-mt-4 empty:hidden">
+        {showPreview && (
+          <div className="space-y-1 text-sm text-ink-2">
+            <p>
+              {t(
+                preview.data.count === 0
+                  ? 'alerts.previewNone'
+                  : preview.data.count === 1
+                    ? 'alerts.previewOne'
+                    : 'alerts.previewCount',
+                { keyword: preview.data.keyword, count: preview.data.count, days: preview.data.days },
+              )}
+            </p>
+            {preview.data.examples.length > 0 && (
+              <ul aria-label={t('alerts.previewLabel')} className="list-disc space-y-0.5 pl-5">
+                {preview.data.examples.map((n) => (
+                  <li key={n.id}>
+                    <Link to={`/notices/${n.id}`} className="text-accent hover:underline">
+                      {n.titleEn ?? n.title}
+                    </Link>{' '}
+                    <span className="text-muted">{n.postedOn}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
 
       {list.length === 0 ? (
         <div className="rounded-lg border border-dashed border-line p-6 text-center text-ink-2">

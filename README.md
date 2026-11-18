@@ -128,6 +128,7 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 | GET | `/api/me` | The signed-in user (401 when signed out) |
 | GET/POST | `/api/subscriptions` | List or follow keywords (signed in) |
 | DELETE | `/api/subscriptions/{id}` | Stop following a keyword |
+| GET | `/api/subscriptions/preview?keyword=visa` | How many notices from the last 30 days a keyword would have matched, with the 3 newest (same rule as real alerts) |
 | GET | `/api/bookmarks` | Saved notices, newest first (signed in) |
 | PUT/DELETE | `/api/bookmarks/{noticeId}` | Save or unsave a notice (idempotent, up to 200) |
 | POST | `/api/alerts/unsubscribe?token=` | Pause alert emails (one-click, from the email link; no session needed) |

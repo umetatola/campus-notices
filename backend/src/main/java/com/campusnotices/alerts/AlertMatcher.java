@@ -17,6 +17,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class AlertMatcher {
 
+	/**
+	 * SQL condition: notice {@code n} (with summary {@code s}, left-joined) contains {@code keywordExpr}. Shared
+	 * with the keyword preview so "would have matched" means exactly what a real alert means.
+	 */
+	static String matches(String keywordExpr) {
+		return """
+				(strpos(lower(n.title), lower(%1$s)) > 0
+				 or strpos(lower(coalesce(n.body_text, '')), lower(%1$s)) > 0
+				 or strpos(lower(coalesce(s.title_en, '')), lower(%1$s)) > 0
+				 or strpos(lower(coalesce(s.summary_en, '')), lower(%1$s)) > 0)""".formatted(keywordExpr);
+	}
+
 	private final JdbcClient jdbc;
 	private final AlertProperties props;
 
@@ -53,13 +65,10 @@ public class AlertMatcher {
 				  join subscriptions sub on sub.created_at <= n.first_seen_at
 				  join users u on u.id = sub.user_id and u.alerts_paused_at is null
 				 where n.id in (:ids)
-				   and (strpos(lower(n.title), lower(sub.keyword)) > 0
-				        or strpos(lower(coalesce(n.body_text, '')), lower(sub.keyword)) > 0
-				        or strpos(lower(coalesce(s.title_en, '')), lower(sub.keyword)) > 0
-				        or strpos(lower(coalesce(s.summary_en, '')), lower(sub.keyword)) > 0)
+				   and %s
 				 order by sub.user_id, n.id, sub.created_at
 				on conflict do nothing
-				""")
+				""".formatted(matches("sub.keyword")))
 				.param("ids", ready)
 				.update();
 		jdbc.sql("update notices set alerts_checked_at = now() where id in (:ids)").param("ids", ready).update();
