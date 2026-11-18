@@ -5,6 +5,9 @@ import { createBrowserRouter, RouterProvider } from 'react-router'
 import './index.css'
 import LangProvider from './LangProvider'
 import { routes } from './routes'
+import { applySavedPreferences } from './preferences'
+
+applySavedPreferences()
 
 const queryClient = new QueryClient({
   defaultOptions: {

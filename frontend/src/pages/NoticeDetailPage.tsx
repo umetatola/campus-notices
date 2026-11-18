@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router'
 import DOMPurify from 'dompurify'
@@ -8,6 +8,7 @@ import { categoryName, dueLabel, postedLabel } from '../labels'
 import NotFoundPage from './NotFoundPage'
 import { NoticeRow } from './NoticeListPage'
 import { translate, useI18n, type Lang } from '../i18n'
+import { useEnglish, useTranslation } from '../translate'
 
 export default function NoticeDetailPage() {
   const { id } = useParams()
@@ -34,6 +35,13 @@ export default function NoticeDetailPage() {
     return body.innerHTML
   }, [rawHtml, lang])
   const hasImages = bodyHtml?.includes('<img') ?? false
+
+  // English interface without Claude's title: machine translations of the title, office and body
+  const machineTitle = useEnglish(notice.data?.summary.titleEn ? null : notice.data?.title)
+  const titleEn = notice.data?.summary.titleEn ?? machineTitle
+  const department = useEnglish(notice.data?.department) ?? notice.data?.department
+  const body = useTranslation(notice.data?.bodyText)
+  const [showOriginal, setShowOriginal] = useState(false)
 
   // go back to the list the user came from (keeps their search), or to the start page on a direct visit
   const back = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/'))
@@ -64,9 +72,9 @@ export default function NoticeDetailPage() {
       ) : (
         <>
           <header className="space-y-2">
-            {notice.data.summary.titleEn && lang === 'en' ? (
+            {titleEn && lang === 'en' ? (
               <>
-                <h1 className="text-2xl leading-snug font-semibold text-balance">{notice.data.summary.titleEn}</h1>
+                <h1 className="text-2xl leading-snug font-semibold text-balance">{titleEn}</h1>
                 <p lang="ko" className="leading-snug text-ink-2">
                   {notice.data.title}
                 </p>
@@ -87,10 +95,10 @@ export default function NoticeDetailPage() {
             )}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
               <span className="text-accent">{categoryName(notice.data.category, lang)}</span>
-              {notice.data.department && (
+              {department && (
                 <>
                   <span aria-hidden>·</span>
-                  <span>{notice.data.department}</span>
+                  <span lang={department === notice.data.department ? 'ko' : 'en'}>{department}</span>
                 </>
               )}
               <span aria-hidden>·</span>
@@ -129,14 +137,7 @@ export default function NoticeDetailPage() {
               <ul className="mt-2 space-y-1.5">
                 {notice.data.attachments.map((a) => (
                   <li key={a.url}>
-                    <a
-                      href={a.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="break-all text-sm text-accent hover:underline"
-                    >
-                      {a.name}
-                    </a>
+                    <AttachmentLink name={a.name} url={a.url} />
                   </li>
                 ))}
               </ul>
@@ -149,15 +150,40 @@ export default function NoticeDetailPage() {
             </p>
           )}
 
-          {bodyHtml && (
+          {(body.english || body.pending) && (
+            <section className="space-y-3 rounded-lg border border-line bg-surface p-5" aria-labelledby="translated-heading">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 id="translated-heading" className="text-sm font-semibold tracking-wide text-accent uppercase">
+                  {t('detail.translatedBody')}
+                </h2>
+                {body.english && bodyHtml && (
+                  <button onClick={() => setShowOriginal(!showOriginal)} className="text-sm text-accent hover:underline">
+                    {t(showOriginal ? 'detail.hideOriginal' : 'detail.showOriginal')}
+                  </button>
+                )}
+              </div>
+              {body.english ? (
+                <p lang="en" className="leading-relaxed whitespace-pre-line">
+                  {body.english}
+                </p>
+              ) : (
+                <p className="text-sm text-ink-2">{t('detail.translating')}</p>
+              )}
+              <p className="text-xs text-muted">{t('detail.machineNote')}</p>
+            </section>
+          )}
+
+          {/* with a translation the Korean original is shown on request, unless it has pictures the text lacks */}
+          {bodyHtml && (!body.english || showOriginal || hasImages) && (
             <div
+              lang="ko"
               className="notice-body rounded-lg border border-line bg-surface p-5"
               dangerouslySetInnerHTML={{ __html: bodyHtml }}
             />
           )}
 
-          {notice.data.department && (
-            <MoreFromDepartment noticeId={notice.data.id} department={notice.data.department} />
+          {notice.data.department && department && (
+            <MoreFromDepartment noticeId={notice.data.id} department={department} />
           )}
         </>
       )}
@@ -215,6 +241,15 @@ function SummaryCard({ noticeId, summary }: { noticeId: number; summary: Summary
 const longDate = {
   en: new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
   ko: new Intl.DateTimeFormat('ko', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }),
+}
+
+function AttachmentLink({ name, url }: { name: string; url: string }) {
+  const english = useEnglish(name)
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-accent hover:underline">
+      {english ?? name}
+    </a>
+  )
 }
 
 /** The latest other notices from the same office; hidden when there are none or loading fails. */

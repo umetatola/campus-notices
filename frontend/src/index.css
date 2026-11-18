@@ -17,8 +17,9 @@
   color-scheme: light;
 }
 
+/* dark: when the OS asks for it (unless the user picked light in the menu), or when the user picked dark */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #0f141a;
     --surface: #171d25;
     --ink: #e7ecf2;
@@ -33,6 +34,21 @@
     --due-soft: #3a1d1a;
     color-scheme: dark;
   }
+}
+:root[data-theme='dark'] {
+  --bg: #0f141a;
+  --surface: #171d25;
+  --ink: #e7ecf2;
+  --ink-2: #b1bbc7;
+  --muted: #8591a0;
+  --line: #26303b;
+  --accent: #56bfb2;
+  --accent-soft: #15302d;
+  --pin: #f0b061;
+  --pin-soft: #33271a;
+  --due: #f7907f;
+  --due-soft: #3a1d1a;
+  color-scheme: dark;
 }
 
 @theme {
@@ -59,6 +75,268 @@ body {
   /* Korean: wrap between words, not inside them; still break long URLs */
   word-break: keep-all;
   overflow-wrap: anywhere;
+}
+
+/* ---- Backdrop: slow-drifting aurora over a faint dot grid. Purely decorative, behind everything. ---- */
+:root {
+  --glow-1: rgb(14 107 99 / 0.16);
+  --glow-2: rgb(240 160 70 / 0.14);
+  --glow-3: rgb(70 120 220 / 0.1);
+  --dots: rgb(22 32 44 / 0.07);
+  --glass: rgb(255 255 255 / 0.72);
+  --card-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 8px 24px -12px rgb(16 24 40 / 0.12);
+  --card-shadow-hover: 0 2px 4px rgb(16 24 40 / 0.05), 0 16px 32px -14px rgb(14 107 99 / 0.28);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --glow-1: rgb(86 191 178 / 0.14);
+    --glow-2: rgb(240 176 97 / 0.08);
+    --glow-3: rgb(110 140 255 / 0.1);
+    --dots: rgb(231 236 242 / 0.06);
+    --glass: rgb(23 29 37 / 0.7);
+    --card-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.5);
+    --card-shadow-hover: 0 2px 4px rgb(0 0 0 / 0.3), 0 16px 32px -14px rgb(86 191 178 / 0.3);
+  }
+}
+:root[data-theme='dark'] {
+  --glow-1: rgb(86 191 178 / 0.14);
+  --glow-2: rgb(240 176 97 / 0.08);
+  --glow-3: rgb(110 140 255 / 0.1);
+  --dots: rgb(231 236 242 / 0.06);
+  --glass: rgb(23 29 37 / 0.7);
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.5);
+  --card-shadow-hover: 0 2px 4px rgb(0 0 0 / 0.3), 0 16px 32px -14px rgb(86 191 178 / 0.3);
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.backdrop::before {
+  /* dot grid, fading out towards the bottom */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--dots) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.backdrop span {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  animation: drift 26s ease-in-out infinite alternate;
+}
+.backdrop span:nth-child(1) {
+  width: 46rem;
+  height: 32rem;
+  top: -14rem;
+  left: -10rem;
+  background: var(--glow-1);
+}
+.backdrop span:nth-child(2) {
+  width: 36rem;
+  height: 28rem;
+  top: -8rem;
+  right: -12rem;
+  background: var(--glow-2);
+  animation-duration: 32s;
+  animation-delay: -8s;
+}
+.backdrop span:nth-child(3) {
+  width: 40rem;
+  height: 30rem;
+  bottom: -18rem;
+  left: 30%;
+  background: var(--glow-3);
+  animation-duration: 38s;
+  animation-delay: -16s;
+}
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(6rem, 3rem, 0) scale(1.15);
+  }
+}
+
+/* frosted header that stays on top while scrolling */
+.glass {
+  background: var(--glass);
+  backdrop-filter: saturate(1.6) blur(14px);
+  -webkit-backdrop-filter: saturate(1.6) blur(14px);
+}
+
+/* the logo mark */
+.brand-mark {
+  background: linear-gradient(135deg, #12a191, var(--accent) 55%, #0b4f6c);
+  box-shadow: 0 6px 16px -6px rgb(14 107 99 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.25);
+}
+
+/* raised card with a gentle lift on hover */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow);
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.25s ease,
+    border-color 0.25s ease;
+}
+.card:hover {
+  box-shadow: var(--card-shadow-hover);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  transform: translateY(-1px);
+}
+
+/* every existing panel and field (rounded-lg border bg-surface) gets the softer radius and depth of .card */
+main .rounded-lg.border-line.bg-surface {
+  border-radius: 14px;
+  box-shadow: var(--card-shadow);
+}
+/* rows in notice lists light up under the pointer */
+main ul.divide-y > li {
+  transition: background-color 0.15s ease;
+}
+main ul.divide-y > li:hover {
+  background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+}
+
+/* main call-to-action buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #12a191, var(--accent));
+  color: #fff;
+  box-shadow: 0 6px 14px -8px rgb(14 107 99 / 0.8);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+.btn-primary:not(:disabled):hover {
+  filter: brightness(1.08);
+  box-shadow: 0 10px 20px -8px rgb(14 107 99 / 0.8);
+}
+.btn-primary:not(:disabled):active {
+  transform: translateY(1px);
+}
+.btn-primary:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+/* ---- AI mode ---- */
+.ai-orb {
+  background: conic-gradient(from 210deg, #12a191, #3b82f6, #a855f7, #f59e0b, #12a191);
+  box-shadow:
+    0 8px 24px -8px rgb(59 130 246 / 0.55),
+    inset 0 1px 0 rgb(255 255 255 / 0.3);
+}
+.ai-orb.is-thinking {
+  animation: orb-spin 2.4s linear infinite;
+}
+@keyframes orb-spin {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+.ai-gradient-text {
+  background: linear-gradient(100deg, var(--ink) 20%, var(--accent) 55%, #6d5df6 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* the prompt box: a soft colour ring on focus, and a moving one while the AI works */
+.ai-prompt {
+  border-radius: 20px;
+}
+.ai-prompt:focus-within {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent),
+    var(--card-shadow-hover);
+  transform: none;
+}
+.ai-prompt.is-busy {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(90deg, #12a191, #3b82f6, #a855f7, #12a191) border-box;
+  background-size:
+    100% 100%,
+    300% 100%;
+  animation: ring 3s linear infinite;
+}
+@keyframes ring {
+  to {
+    background-position:
+      0 0,
+      300% 0;
+  }
+}
+.ai-shimmer {
+  background: linear-gradient(90deg, var(--muted) 30%, var(--accent) 50%, var(--muted) 70%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+.ai-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.ai-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--accent);
+  animation: dot 1s ease-in-out infinite;
+}
+.ai-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.ai-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes dot {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* each page fades up a little when you arrive */
+.page-enter {
+  animation: page-enter 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Notice bodies are HTML from the university site (sanitized twice: on the server and with DOMPurify). */

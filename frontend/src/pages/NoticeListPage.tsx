@@ -5,6 +5,7 @@ import Highlight from '../Highlight'
 import { fetchCategories, fetchNotices, type NoticeItem } from '../api'
 import { categoryName, dueLabel, postedLabel } from '../labels'
 import { useI18n } from '../i18n'
+import { useEnglish } from '../translate'
 
 const PAGE_SIZE = 20
 
@@ -165,9 +166,13 @@ export function CategoryChip(props: { label: string; sublabel?: string; selected
 export function NoticeRow({ notice, query }: { notice: NoticeItem; query?: string }) {
   const { lang, t } = useI18n()
   const due = dueLabel(notice.deadline, undefined, lang)
+  // Claude's English title when there is one, otherwise a machine translation (English interface only)
+  const machineTitle = useEnglish(notice.titleEn ? null : notice.title)
+  const titleEn = notice.titleEn ?? machineTitle
+  const department = useEnglish(notice.department) ?? notice.department
   // the reader's language first; the other one underneath
-  const main = lang === 'ko' || !notice.titleEn ? notice.title : notice.titleEn
-  const second = !notice.titleEn ? null : lang === 'ko' ? notice.titleEn : notice.title
+  const main = lang === 'ko' || !titleEn ? notice.title : titleEn
+  const second = !titleEn ? null : lang === 'ko' ? titleEn : notice.title
   return (
     <li>
       <Link
@@ -201,10 +206,10 @@ export function NoticeRow({ notice, query }: { notice: NoticeItem; query?: strin
             </span>
           )}
           <span className="text-accent">{categoryName(notice.category, lang)}</span>
-          {notice.department && (
+          {department && (
             <>
               <span aria-hidden>·</span>
-              <span lang="ko">{notice.department}</span>
+              <span lang={department === notice.department ? 'ko' : 'en'}>{department}</span>
             </>
           )}
           <span aria-hidden>·</span>

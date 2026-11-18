@@ -59,6 +59,7 @@ function localDate(isoDate: string): Date {
   return new Date(y, m - 1, d)
 }
 
-function kstDate(d: Date): string {
+/** The calendar date in Korean time as yyyy-MM-dd. */
+export function kstDate(d: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(d) // en-CA gives yyyy-MM-dd
 }
