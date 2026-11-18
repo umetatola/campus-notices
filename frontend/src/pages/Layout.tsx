@@ -175,10 +175,14 @@ export default function Layout() {
                 <NavLink to="/alerts" className={navLink}>
                   {t('nav.alerts')}
                 </NavLink>
-                <span className="hidden max-w-48 truncate text-sm text-muted sm:inline" title={me.email}>
-                  {me.email}
+                <span
+                  className="brand-mark ml-1.5 grid size-8 place-items-center rounded-full text-sm font-semibold text-white uppercase"
+                  title={me.email}
+                >
+                  <span aria-hidden="true">{me.email.charAt(0)}</span>
+                  <span className="sr-only">{me.email}</span>
                 </span>
-                <button onClick={() => logout.mutate()} className="text-sm text-ink-2 hover:text-ink">
+                <button onClick={() => logout.mutate()} className="rounded-full px-2.5 py-1.5 text-sm text-ink-2 transition hover:bg-accent-soft/60 hover:text-ink">
                   {t('nav.signOut')}
                 </button>
               </>

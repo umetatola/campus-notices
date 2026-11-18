@@ -6,6 +6,7 @@ import { DeadlineCalendar } from './DeadlineCalendar'
 import { NoticeRow } from './NoticeListPage'
 import { Segmented } from '../Segmented'
 import { StatusCard } from '../StatusCard'
+import { PageHeader } from '../PageHeader'
 
 const RANGES = [14, 30] as const
 /** The calendar asks for the longest range the API allows. */
@@ -24,18 +25,9 @@ export default function DeadlinesPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start gap-3.5">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-due-soft text-due">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="size-5" aria-hidden="true">
-            <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
-            <path d="M3.5 10h17M8 3v4M16 3v4M8 14h3" />
-          </svg>
-        </span>
-        <div className="space-y-1.5">
-          <h1 className="text-[1.65rem] leading-tight font-semibold tracking-tight">{t('deadlines.title')}</h1>
-          <p className="text-ink-2">{t('deadlines.intro')}</p>
-        </div>
-      </div>
+      <PageHeader icon="deadlines" title={t('deadlines.title')}>
+        <p>{t('deadlines.intro')}</p>
+      </PageHeader>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Segmented
           label={t('deadlines.view')}
