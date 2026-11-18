@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router'
 import { fetchDesktopSettings, fetchStatus, signOut } from '../api'
 import { timeAgo } from '../labels'
 import { useMe } from '../useMe'
+import { useWide } from '../useWide'
 import { useI18n } from '../i18n'
 import { useHistoryNav, useStandaloneWindow } from '../useHistoryNav'
 import { AppMenu, BackToTop, HomeButton, RefreshButton } from '../AppChrome'
@@ -32,11 +34,64 @@ function HistoryButtons() {
   )
 }
 
+const TAB_ICONS: Record<string, ReactNode> = {
+  home: (
+    <>
+      <path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19z" />
+    </>
+  ),
+  ask: <path d="M12 3l2 5.2a3 3 0 0 0 1.8 1.8L21 12l-5.2 2a3 3 0 0 0-1.8 1.8L12 21l-2-5.2A3 3 0 0 0 8.2 14L3 12l5.2-2A3 3 0 0 0 10 8.2z" />,
+  deadlines: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4M8 14h3" />
+    </>
+  ),
+  saved: <path d="M6.5 3.5h11a1 1 0 0 1 1 1V21l-6.5-4.5L5.5 21V4.5a1 1 0 0 1 1-1z" />,
+  alerts: (
+    <>
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </>
+  ),
+}
+
+/** Bottom navigation on phones, where the header has no room for the links. */
+function TabBar({ signedIn }: { signedIn: boolean }) {
+  const { t } = useI18n()
+  const tabs: [string, string, string][] = [
+    ['/', 'home', t('nav.home')],
+    ['/ask', 'ask', t('nav.ask')],
+    ['/deadlines', 'deadlines', t('nav.deadlines')],
+    signedIn ? ['/saved', 'saved', t('nav.saved')] : ['/sign-in', 'alerts', t('nav.getAlerts')],
+  ]
+  if (signedIn) tabs.push(['/alerts', 'alerts', t('nav.alerts')])
+  return (
+    <nav className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-line/70 sm:hidden print:hidden" aria-label={t('nav.tabs')}>
+      <ul className="mx-auto flex max-w-md justify-around px-2 pt-1.5 pb-1.5">
+        {tabs.map(([to, icon, label]) => (
+          <li key={to} className="flex-1">
+            <NavLink to={to} end={to === '/'} className="flex flex-col items-center gap-0.5 rounded-xl py-1 text-[11px] font-medium text-muted transition">
+              <span className="tab-icon grid h-7 w-12 place-items-center rounded-full transition">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="size-[21px]" aria-hidden="true">
+                  {TAB_ICONS[icon]}
+                </svg>
+              </span>
+              <span className="max-w-full truncate px-1">{label}</span>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
 export default function Layout() {
   const me = useMe()
   const { lang, setLang, t } = useI18n()
   const location = useLocation()
   const standalone = useStandaloneWindow()
+  const wide = useWide()
   const status = useQuery({ queryKey: ['status'], queryFn: fetchStatus, refetchInterval: 60_000 })
   // answers only in the desktop app, which is where the Settings page applies
   const desktop = useQuery({ queryKey: ['desktop-settings'], queryFn: fetchDesktopSettings, retry: false })
@@ -69,7 +124,7 @@ export default function Layout() {
       <header className="glass sticky top-0 z-20 border-b border-line/70 print:hidden">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex shrink-0 items-center gap-1">
+            <div className={`shrink-0 items-center gap-1 ${showArrows ? 'flex' : 'hidden sm:flex'}`}>
               {showArrows && <HistoryButtons />}
               <RefreshButton />
               {showArrows && <HomeButton />}
@@ -86,7 +141,9 @@ export default function Layout() {
               </span>
             </Link>
           </div>
-          <nav className="flex flex-wrap items-center justify-end gap-x-1 gap-y-1" aria-label={t('nav.account')}>
+          <nav className="flex items-center justify-end gap-x-1" aria-label={t('nav.account')}>
+            {wide && (
+            <div className="flex items-center gap-x-1">
             <NavLink
               to="/ask"
               className={({ isActive }) =>
@@ -130,6 +187,8 @@ export default function Layout() {
                 {t('nav.getAlerts')}
               </NavLink>
             ) : null}
+            </div>
+            )}
             <button
               onClick={() => setLang(lang === 'en' ? 'ko' : 'en')}
               aria-label={t('nav.switchLanguage')}
@@ -144,7 +203,7 @@ export default function Layout() {
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      <main className="mx-auto max-w-4xl px-4 pt-6 pb-8 sm:pt-8">
         <div key={location.pathname} className="page-enter">
           <Outlet />
         </div>
@@ -160,7 +219,22 @@ export default function Layout() {
           </p>
         )}
         {t('footer.note')}
+        {me && !wide && (
+          <p className="mt-3 flex items-center gap-2">
+            <span className="truncate">{me.email}</span>
+            <button onClick={() => logout.mutate()} className="shrink-0 font-medium text-ink-2 underline">
+              {t('nav.signOut')}
+            </button>
+          </p>
+        )}
       </footer>
+      {/* room for the tab bar on phones */}
+      {!wide && (
+        <>
+          <div className="h-20 print:hidden" aria-hidden="true" />
+          <TabBar signedIn={!!me} />
+        </>
+      )}
       <BackToTop />
       <ScrollRestoration />
     </div>

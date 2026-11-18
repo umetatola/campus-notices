@@ -339,6 +339,153 @@ main ul.divide-y > li:hover {
   }
 }
 
+/* ---- Category colours: elements set --c with categoryVars() ---- */
+.cat-tile {
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 13%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 18%, transparent);
+}
+.cat-text {
+  color: color-mix(in srgb, var(--c) 82%, var(--ink));
+}
+.cat-chip {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+}
+.cat-chip:hover {
+  border-color: color-mix(in srgb, var(--c) 55%, var(--line));
+  color: var(--ink);
+}
+.cat-chip[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--c);
+  color: #fff;
+  box-shadow: 0 6px 16px -8px var(--c);
+}
+.cat-chip .cat-dot {
+  background: var(--c);
+}
+.cat-chip[aria-pressed='true'] .cat-dot {
+  background: #fff;
+}
+
+/* the row's colour stripe on the left, shown on hover and keyboard focus */
+.notice-row {
+  position: relative;
+}
+.notice-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--c);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.notice-row:hover::before,
+.notice-row:focus-visible::before {
+  opacity: 1;
+}
+/* a little "new" pulse for notices posted today */
+.new-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
+  animation: new-pulse 2.2s ease-out infinite;
+}
+@keyframes new-pulse {
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* the notice page's header card: a thin category-coloured band on top and a soft wash behind */
+.detail-head::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 30%, transparent));
+}
+.detail-head::after {
+  content: '';
+  position: absolute;
+  top: -6rem;
+  right: -6rem;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 9999px;
+  background: radial-gradient(color-mix(in srgb, var(--c) 12%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
+/* ---- Home hero ---- */
+.hero-title {
+  background: linear-gradient(100deg, var(--ink) 30%, var(--accent) 75%, #0b4f6c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.search-field {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.search-field:focus-within {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent),
+    var(--card-shadow-hover);
+}
+.kbd {
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 6px;
+}
+
+/* chips scroll sideways on phones instead of wrapping into a tall block */
+.chip-row {
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+}
+.chip-row::-webkit-scrollbar {
+  display: none;
+}
+@media (min-width: 640px) {
+  .chip-row {
+    mask-image: none;
+  }
+}
+
+/* ---- Phone tab bar ---- */
+.tabbar {
+  background: var(--glass);
+  backdrop-filter: saturate(1.6) blur(16px);
+  -webkit-backdrop-filter: saturate(1.6) blur(16px);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tabbar a[aria-current='page'] {
+  color: var(--accent);
+}
+.tabbar a[aria-current='page'] .tab-icon {
+  background: var(--accent-soft);
+}
+
 /* Notice bodies are HTML from the university site (sanitized twice: on the server and with DOMPurify). */
 .notice-body {
   line-height: 1.75;

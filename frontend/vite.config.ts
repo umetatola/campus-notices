@@ -8,7 +8,8 @@ export default defineConfig({
   server: {
     // In development the Spring Boot API runs on :8080; the browser only talks to Vite.
     proxy: {
-      '/api': 'http://localhost:8080',
+      // API_TARGET points the dev server at another backend, e.g. a container on a different port
+      '/api': process.env.API_TARGET ?? 'http://localhost:8080',
     },
   },
   test: {

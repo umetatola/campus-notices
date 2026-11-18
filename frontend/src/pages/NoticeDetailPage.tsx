@@ -5,6 +5,8 @@ import DOMPurify from 'dompurify'
 import { ApiError, fetchBookmarks, fetchMoreFromDepartment, fetchNotice, removeBookmark, saveBookmark, type Summary } from '../api'
 import { useMe } from '../useMe'
 import { categoryName, dueLabel, postedLabel } from '../labels'
+import { categoryVars } from '../categories'
+import { CategoryIcon } from '../CategoryIcon'
 import NotFoundPage from './NotFoundPage'
 import { NoticeRow } from './NoticeListPage'
 import { translate, useI18n, type Lang } from '../i18n'
@@ -52,7 +54,10 @@ export default function NoticeDetailPage() {
 
   return (
     <article className="space-y-6">
-      <button onClick={back} className="text-sm text-accent hover:underline">
+      <button
+        onClick={back}
+        className="inline-flex items-center gap-1 rounded-full border border-line bg-surface/70 px-3 py-1.5 text-sm text-ink-2 transition hover:border-accent hover:text-accent"
+      >
         {t('detail.back')}
       </button>
 
@@ -71,7 +76,13 @@ export default function NoticeDetailPage() {
         </div>
       ) : (
         <>
-          <header className="space-y-2">
+          <header style={categoryVars(notice.data.category)} className="card detail-head relative space-y-3 overflow-hidden p-5 hover:transform-none sm:p-7">
+            <div className="flex items-center gap-2.5">
+              <span className="cat-tile grid size-9 shrink-0 place-items-center rounded-xl">
+                <CategoryIcon category={notice.data.category} className="size-[18px]" />
+              </span>
+              <span className="cat-text text-sm font-semibold">{categoryName(notice.data.category, lang)}</span>
+            </div>
             {titleEn && lang === 'en' ? (
               <>
                 <h1 className="text-2xl leading-snug font-semibold text-balance">{titleEn}</h1>
@@ -94,14 +105,12 @@ export default function NoticeDetailPage() {
               </h1>
             )}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-              <span className="text-accent">{categoryName(notice.data.category, lang)}</span>
               {department && (
                 <>
-                  <span aria-hidden>·</span>
                   <span lang={department === notice.data.department ? 'ko' : 'en'}>{department}</span>
+                  <span aria-hidden>·</span>
                 </>
               )}
-              <span aria-hidden>·</span>
               <time dateTime={notice.data.postedOn}>
                 {t('detail.posted', { date: postedLabel(notice.data.postedOn, undefined, lang) })}
               </time>
@@ -114,12 +123,12 @@ export default function NoticeDetailPage() {
                 </>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <a
                 href={notice.data.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block text-sm text-accent hover:underline"
+                className="btn-primary inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium"
               >
                 {t('detail.original')}
               </a>
@@ -292,7 +301,7 @@ function SaveButton({ noticeId }: { noticeId: number }) {
         aria-pressed={pressed}
         disabled={toggle.isPending}
         onClick={() => toggle.mutate(!saved)}
-        className={`rounded-md border px-2.5 py-1 text-sm font-medium ${
+        className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
           pressed ? 'border-accent bg-accent-soft text-accent' : 'border-line text-ink-2 hover:text-ink'
         }`}
       >
