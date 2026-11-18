@@ -72,7 +72,7 @@ export default function AlertsPage() {
           <button
             onClick={() => resume.mutate()}
             disabled={resume.isPending}
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-surface disabled:opacity-60"
+            className="btn-primary rounded-full px-4 py-1.5 text-sm font-medium"
           >
             {t('alerts.resume')}
           </button>
@@ -101,7 +101,7 @@ export default function AlertsPage() {
         <button
           type="submit"
           disabled={full || add.isPending || !keyword.trim()}
-          className="shrink-0 rounded-lg bg-accent px-4 py-2.5 font-medium text-surface disabled:opacity-50"
+          className="btn-primary shrink-0 rounded-xl px-5 py-2.5 font-medium"
         >
           {t('alerts.follow')}
         </button>

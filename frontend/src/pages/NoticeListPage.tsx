@@ -92,7 +92,7 @@ export default function NoticeListPage() {
           <p className="mt-1 text-sm text-ink-2">{t('list.loadErrorHint')}</p>
           <button
             onClick={() => notices.refetch()}
-            className="mt-4 rounded-md bg-accent px-4 py-2 text-sm font-medium text-surface"
+            className="btn-primary mt-4 rounded-full px-5 py-2 text-sm font-medium"
           >
             {t('common.tryAgain')}
           </button>

@@ -55,7 +55,7 @@ export default function UnsubscribePage() {
       <button
         onClick={() => stop.mutate()}
         disabled={stop.isPending}
-        className="w-full rounded-lg bg-accent px-4 py-3 font-medium text-surface disabled:opacity-60"
+        className="btn-primary w-full rounded-xl px-4 py-3 font-medium"
       >
         {stop.isPending ? t('unsub.working') : t('unsub.button')}
       </button>
