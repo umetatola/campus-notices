@@ -425,6 +425,15 @@ main ul.divide-y > li:hover {
   pointer-events: none;
 }
 
+/* the English summary: a soft AI-coloured border so it stands apart from the original text */
+.summary-card {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(120deg, color-mix(in srgb, var(--accent) 55%, transparent), color-mix(in srgb, #6d5df6 45%, transparent)) border-box;
+  box-shadow: var(--card-shadow);
+}
+
 /* ---- Home hero ---- */
 .hero-title {
   background: linear-gradient(100deg, var(--ink) 30%, var(--accent) 75%, #0b4f6c);

@@ -143,7 +143,7 @@ export default function NoticeDetailPage() {
               <h2 className="text-sm font-semibold text-ink-2">
                 {t('detail.attachments', { n: notice.data.attachments.length })}
               </h2>
-              <ul className="mt-2 space-y-1.5">
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                 {notice.data.attachments.map((a) => (
                   <li key={a.url}>
                     <AttachmentLink name={a.name} url={a.url} />
@@ -211,20 +211,25 @@ function SummaryCard({ noticeId, summary }: { noticeId: number; summary: Summary
   }
   const due = dueLabel(summary.deadline, undefined, lang)
   return (
-    <section className="space-y-3 rounded-lg border border-line bg-surface p-5" aria-labelledby="summary-heading">
-      <h2 id="summary-heading" className="text-sm font-semibold tracking-wide text-accent uppercase">
+    <section className="summary-card space-y-4 rounded-2xl p-5 sm:p-6" aria-labelledby="summary-heading">
+      <h2 id="summary-heading" className="flex items-center gap-2 text-sm font-semibold tracking-wide text-accent uppercase">
+        <span className="ai-orb grid size-6 place-items-center rounded-lg text-white">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="size-3.5" aria-hidden="true">
+            <path d="M12 2.5l2.1 5.6a3 3 0 0 0 1.8 1.8l5.6 2.1-5.6 2.1a3 3 0 0 0-1.8 1.8L12 21.5l-2.1-5.6a3 3 0 0 0-1.8-1.8L2.5 12l5.6-2.1a3 3 0 0 0 1.8-1.8z" />
+          </svg>
+        </span>
         {t('detail.inEnglish')}
       </h2>
-      <p lang="en" className="leading-relaxed">
+      <p lang="en" className="text-[15.5px] leading-relaxed">
         {summary.summaryEn}
       </p>
       {summary.deadline && (
-        <p className="flex flex-wrap items-center gap-2 text-sm">
-          <span
-            className={`rounded px-1.5 py-0.5 text-xs font-medium ${due ? 'bg-due-soft text-due' : 'bg-line text-ink-2'}`}
-          >
-            {due ?? t('detail.deadlinePassed')}
-          </span>
+        <div
+          className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl px-4 py-3 text-sm ${
+            due ? 'bg-due-soft' : 'bg-bg'
+          }`}
+        >
+          <span className={`font-semibold ${due ? 'text-due' : 'text-ink-2'}`}>{due ?? t('detail.deadlinePassed')}</span>
           <span className="text-ink-2">
             {formatDate(summary.deadline, lang)}
             {summary.deadlineNote && ` · ${summary.deadlineNote}`}
@@ -233,12 +238,12 @@ function SummaryCard({ noticeId, summary }: { noticeId: number; summary: Summary
             <a
               href={`/api/notices/${noticeId}/calendar.ics`}
               download
-              className="text-accent hover:underline"
+              className="ml-auto rounded-full border border-due/30 bg-surface px-3 py-1 text-xs font-medium text-due transition hover:border-due"
             >
               {t('detail.addToCalendar')}
             </a>
           )}
-        </p>
+        </div>
       )}
       <p className="text-xs text-muted">
         {t('detail.aiNote')}
@@ -255,8 +260,19 @@ const longDate = {
 function AttachmentLink({ name, url }: { name: string; url: string }) {
   const english = useEnglish(name)
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-accent hover:underline">
-      {english ?? name}
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2.5 rounded-xl border border-line px-3 py-2.5 text-sm text-ink transition hover:border-accent hover:text-accent"
+    >
+      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="size-4" aria-hidden="true">
+          <path d="M14 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8z" />
+          <path d="M14 3.5V8h4.5M12 11.5v6M9.5 15l2.5 2.5 2.5-2.5" />
+        </svg>
+      </span>
+      <span className="min-w-0 break-all">{english ?? name}</span>
     </a>
   )
 }
