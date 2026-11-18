@@ -313,8 +313,37 @@ class AuthAndAlertsIntegrationTest {
 		assertThat(mail.sent.getLast().headers().get("List-Unsubscribe")).contains(token);
 	}
 
+	@Test
+	void keywordPreviewCountsRecentMatchesWithTheAlertRule() {
+		MockHttpSession session = signIn("frank@ajou.ac.kr");
+		LocalDate today = LocalDate.now();
+		save("600001", "[국제처] Okapi 비자 연장 안내", "visa", today.minusDays(2));
+		Notice newest = save("600002", "[국제처] 외국인 유학생 OKAPI 설명회", "설명회", today);
+		save("600003", "[학생지원팀] 기숙사 안내", "본문에 okapi 포함", today.minusDays(5)); // body match
+		save("600004", "[국제처] 오래된 okapi 안내", "old", today.minusDays(60)); // outside the window
+		save("600005", "[총무팀] 주차 안내", "parking", today);
+
+		assertThat(mvc.get().uri("/api/subscriptions/preview").param("keyword", "  okapi ").session(session)).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.keyword", v -> v.assertThat().isEqualTo("okapi"))
+				.hasPathSatisfying("$.days", v -> v.assertThat().isEqualTo(30))
+				.hasPathSatisfying("$.count", v -> v.assertThat().isEqualTo(3))
+				.hasPathSatisfying("$.examples.length()", v -> v.assertThat().isEqualTo(3))
+				.hasPathSatisfying("$.examples[0].id", v -> v.assertThat().isEqualTo(newest.getId().intValue()));
+		assertThat(mvc.get().uri("/api/subscriptions/preview?keyword=nothing-matches-this").session(session))
+				.hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.count", v -> v.assertThat().isEqualTo(0))
+				.hasPathSatisfying("$.examples.length()", v -> v.assertThat().isEqualTo(0));
+		assertThat(mvc.get().uri("/api/subscriptions/preview").param("keyword", "  ").session(session)).hasStatus(400);
+		assertThat(mvc.get().uri("/api/subscriptions/preview").param("keyword", "x".repeat(51)).session(session)).hasStatus(400);
+		assertThat(mvc.get().uri("/api/subscriptions/preview?keyword=okapi")).hasStatus(401);
+	}
+
 	private Notice save(String articleId, String title, String body) {
-		return writer.save("test", new ScrapedNotice(articleId, "장학", title, "학생지원팀", LocalDate.of(2026, 9, 29),
+		return save(articleId, title, body, LocalDate.of(2026, 9, 29));
+	}
+
+	private Notice save(String articleId, String title, String body, LocalDate postedOn) {
+		return writer.save("test", new ScrapedNotice(articleId, "장학", title, "학생지원팀", postedOn,
 				"https://example.org/" + articleId, false, "<p>" + body + "</p>", body, List.of()));
 	}
 

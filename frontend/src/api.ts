@@ -168,6 +168,18 @@ export function removeSubscription(id: number) {
   return send<void>('DELETE', `/api/subscriptions/${id}`)
 }
 
+export interface KeywordPreview {
+  keyword: string
+  days: number
+  count: number
+  examples: { id: number; title: string; titleEn: string | null; postedOn: string }[]
+}
+
+/** How many recent notices a keyword would have matched (same rule as real alerts). */
+export function previewKeyword(keyword: string) {
+  return getJson<KeywordPreview>(`/api/subscriptions/preview?${new URLSearchParams({ keyword })}`)
+}
+
 /** Saved notices, most recently saved first. */
 export function fetchBookmarks() {
   return getJson<NoticeItem[]>('/api/bookmarks')

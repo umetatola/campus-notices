@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -34,10 +36,51 @@ public class SubscriptionController {
 	public record NewSubscription(@NotBlank @Size(max = 50) String keyword) {
 	}
 
+	static final int PREVIEW_DAYS = 30;
+	static final int PREVIEW_EXAMPLES = 3;
+
+	public record PreviewExample(long id, String title, String titleEn, LocalDate postedOn) {
+	}
+
+	/** How many notices from the last {@code days} days a keyword would have matched, with a few of the newest. */
+	public record Preview(String keyword, int days, int count, List<PreviewExample> examples) {
+	}
+
 	private final JdbcClient jdbc;
 
 	public SubscriptionController(JdbcClient jdbc) {
 		this.jdbc = jdbc;
+	}
+
+	/**
+	 * Try a keyword before following it. Uses the same matching rule as real alerts, but over notices posted in
+	 * the last {@value #PREVIEW_DAYS} days (real alerts only fire for notices that arrive after you follow).
+	 */
+	@GetMapping("/preview")
+	public Preview preview(@AuthenticationPrincipal SessionUser user, @RequestParam String keyword) {
+		String k = normalize(keyword);
+		if (k.isEmpty() || k.length() > 50) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Keyword must be 1-50 characters");
+		}
+		String from = """
+				  from notices n
+				  left join notice_summaries s on s.notice_id = n.id
+				 where n.posted_on >= current_date - :days
+				   and %s
+				""".formatted(AlertMatcher.matches(":k"));
+		int count = jdbc.sql("select count(*) " + from)
+				.param("days", PREVIEW_DAYS).param("k", k).query(Integer.class).single();
+		List<PreviewExample> examples = count == 0 ? List.of() : jdbc.sql(
+				"select n.id, n.title, s.title_en, n.posted_on " + from + " order by n.posted_on desc, n.id desc limit :n")
+				.param("days", PREVIEW_DAYS).param("k", k).param("n", PREVIEW_EXAMPLES)
+				.query((rs, i) -> new PreviewExample(rs.getLong("id"), rs.getString("title"), rs.getString("title_en"),
+						rs.getObject("posted_on", LocalDate.class)))
+				.list();
+		return new Preview(k, PREVIEW_DAYS, count, examples);
+	}
+
+	private static String normalize(String keyword) {
+		return keyword.strip().replaceAll("\\s+", " ");
 	}
 
 	@GetMapping
@@ -53,7 +96,7 @@ public class SubscriptionController {
 	@ResponseStatus(HttpStatus.CREATED)
 	@Transactional
 	public Subscription add(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody NewSubscription body) {
-		String keyword = body.keyword().strip().replaceAll("\\s+", " ");
+		String keyword = normalize(body.keyword());
 		if (keyword.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Keyword is empty");
 		}

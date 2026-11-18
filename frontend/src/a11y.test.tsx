@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import axe from 'axe-core'
@@ -38,13 +39,19 @@ function api(signedIn: boolean) {
       }),
     '/api/me': () => (signedIn ? json({ email: 'me@ajou.ac.kr' }) : new Response(null, { status: 401 })),
     '/api/subscriptions': () => json([{ id: 1, keyword: '장학', createdAt: '2026-10-01T00:00:00Z' }]),
+    '/api/subscriptions/preview': () =>
+      json({ keyword: 'visa', days: 30, count: 2, examples: [{ id: 7, title: notice.title, titleEn: null, postedOn: '2026-10-01' }] }),
     '/api/alerts/status': () => json({ paused: true, frequency: 'INSTANT' }),
     '/api/bookmarks': () => json([notice]),
     '/api/status': () => json({ lastUpdatedAt: '2026-10-01T00:00:00Z', updatesDelayed: false }),
   })
 }
 
-async function check(url: string, ready: string | RegExp, { signedIn = false, lang = 'en' as Lang } = {}) {
+async function check(
+  url: string,
+  ready: string | RegExp,
+  { signedIn = false, lang = 'en' as Lang, then }: { signedIn?: boolean; lang?: Lang; then?: () => Promise<unknown> } = {},
+) {
   api(signedIn)
   const router = createMemoryRouter(routes, { initialEntries: [url] })
   const { container } = render(
@@ -55,6 +62,7 @@ async function check(url: string, ready: string | RegExp, { signedIn = false, la
     </LangContext>,
   )
   await screen.findByText(ready)
+  await then?.()
   const result = await axe.run(container, {
     // jsdom has no layout or computed colors, so contrast can't be checked here
     rules: { 'color-contrast': { enabled: false } },
@@ -70,6 +78,14 @@ describe('accessibility (axe)', () => {
   it('deadlines', () => check('/deadlines', 'Upcoming deadlines'))
   it('sign-in', () => check('/sign-in', 'Email me a sign-in link'))
   it('alerts', () => check('/alerts', 'Turn alerts back on', { signedIn: true }))
+  it('alerts, keyword preview open', () =>
+    check('/alerts', 'Turn alerts back on', {
+      signedIn: true,
+      then: async () => {
+        await userEvent.type(screen.getByRole('textbox', { name: 'Keyword to follow' }), 'visa')
+        await screen.findByText('"visa" matched 2 notices in the last 30 days.')
+      },
+    }))
   it('saved notices', () => check('/saved', 'Saved notices', { signedIn: true }))
   it('notice page, signed in', () => check('/notices/7', /Save/, { signedIn: true }))
   it('unsubscribe', () => check('/unsubscribe?token=abc', 'Stop alert emails?'))
