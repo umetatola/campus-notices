@@ -79,6 +79,13 @@ summarizer:
   batch-size: 5
   max-attempts: 5
 
+# AI mode: Claude answers questions about the notices, searching and reading them itself. Uses the summarizer's
+# API key (off without one). Each question costs API credit, so it is capped per user.
+assistant:
+  model: ${ASSISTANT_MODEL:claude-opus-5-5}
+  questions-per-hour: 30
+  max-steps: 6
+
 # API documentation: OpenAPI JSON at /api/openapi, interactive Swagger UI at /api/docs
 springdoc:
   api-docs:

@@ -94,6 +94,77 @@ async function send<T>(method: 'POST' | 'PUT' | 'DELETE', path: string, body?: u
   return text ? (JSON.parse(text) as T) : null
 }
 
+// ---- AI mode ----
+
+export interface AskStatus {
+  enabled: boolean
+  model: string | null
+}
+
+export function fetchAskStatus() {
+  return getJson<AskStatus>('/api/ask/status')
+}
+
+export interface AskSource {
+  id: number
+  title: string
+  titleEn: string | null
+  department: string | null
+  postedOn: string
+  deadline: string | null
+}
+
+export type AskEvent =
+  | { type: 'step'; kind: 'search' | 'read'; detail: string }
+  | { type: 'answer'; text: string; sources: AskSource[]; model: string }
+  | { type: 'error'; message: string }
+
+export interface AskTurn {
+  question: string
+  answer: string
+}
+
+/** Asks the AI; each search, notice read and the final answer arrive through `onEvent` (server-sent events). */
+export async function ask(question: string, history: AskTurn[], onEvent: (e: AskEvent) => void, signal?: AbortSignal) {
+  if (!readCookie('XSRF-TOKEN')) {
+    await fetch('/api/csrf')
+  }
+  const res = await fetch('/api/ask', {
+    method: 'POST',
+    headers: {
+      Accept: 'text/event-stream',
+      'Content-Type': 'application/json',
+      'X-XSRF-TOKEN': readCookie('XSRF-TOKEN') ?? '',
+    },
+    body: JSON.stringify({ question, history }),
+    signal,
+  })
+  if (!res.ok || !res.body) throw await failure(res)
+
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
+  let buffer = ''
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buffer += value.replace(/\r\n/g, '\n')
+    // events are separated by a blank line: "event: step\ndata: {...}\n\n"
+    let end
+    while ((end = buffer.indexOf('\n\n')) >= 0) {
+      const raw = buffer.slice(0, end)
+      buffer = buffer.slice(end + 2)
+      let name = 'message'
+      const data: string[] = []
+      for (const line of raw.split('\n')) {
+        if (line.startsWith('event:')) name = line.slice(6).trim()
+        else if (line.startsWith('data:')) data.push(line.slice(5).replace(/^ /, ''))
+      }
+      if (!data.length) continue
+      const payload = JSON.parse(data.join('\n'))
+      if (name === 'step' || name === 'answer' || name === 'error') onEvent({ type: name, ...payload })
+    }
+  }
+}
+
 export interface NoticeQuery {
   q?: string
   category?: string
@@ -225,4 +296,38 @@ export interface SiteStatus {
 
 export function fetchStatus() {
   return getJson<SiteStatus>('/api/status')
+}
+
+/** Desktop app only (404 on the website). `summariesOn` is what the running app does; it follows the key after a restart. */
+export interface DesktopSettings {
+  apiKeySet: boolean
+  apiKeyHint: string | null
+  summariesOn: boolean
+  /** False when Windows offers no tray icon to quit from. */
+  backgroundAvailable: boolean
+  keepRunning: boolean
+  startedAt: string
+}
+
+export function fetchDesktopSettings() {
+  return getJson<DesktopSettings>('/api/desktop/settings')
+}
+
+/** An empty key removes it. */
+export async function saveApiKey(apiKey: string) {
+  return (await send<DesktopSettings>('PUT', '/api/desktop/settings/api-key', { apiKey }))!
+}
+
+/** Applies at once, no restart needed. */
+export async function setKeepRunning(enabled: boolean) {
+  return (await send<DesktopSettings>('PUT', '/api/desktop/settings/keep-running', { enabled }))!
+}
+
+/** Desktop app only: machine translation of Korean notice text, same order as `texts`. */
+export async function translateTexts(texts: string[]) {
+  return (await send<{ translations: string[] }>('POST', '/api/desktop/translate', { texts }))!.translations
+}
+
+export async function restartApp() {
+  await send('POST', '/api/desktop/restart')
 }

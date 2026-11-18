@@ -1,10 +1,14 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
 import Highlight from '../Highlight'
-import { fetchCategories, fetchNotices, type NoticeItem } from '../api'
-import { categoryName, dueLabel, postedLabel } from '../labels'
+import { fetchCategories, fetchNotices, fetchStatus, type NoticeItem } from '../api'
+import { categoryName, dueLabel, kstDate, postedLabel, timeAgo } from '../labels'
+import { categoryVars, sortCategories } from '../categories'
+import { CategoryIcon } from '../CategoryIcon'
+import { StatusCard } from '../StatusCard'
 import { useI18n } from '../i18n'
+import { useEnglish } from '../translate'
 
 const PAGE_SIZE = 20
 
@@ -31,16 +35,48 @@ export default function NoticeListPage() {
     placeholderData: keepPreviousData,
   })
   const categories = useQuery({ queryKey: ['categories'], queryFn: fetchCategories, staleTime: 10 * 60_000 })
+  const status = useQuery({ queryKey: ['status'], queryFn: fetchStatus, refetchInterval: 60_000 })
+  // the big welcome only on the plain first page; a search or filter gets straight to the results
+  const landing = !q && !category && page === 0
 
   return (
     <div className="space-y-5">
+      {landing && (
+        <section className="pt-2 pb-1 sm:pt-6">
+          <h1 className="hero-title text-[1.9rem] leading-tight font-semibold tracking-tight sm:text-[2.6rem]">
+            {t('home.title')}
+          </h1>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-2 sm:text-base">{t('home.subtitle')}</p>
+          {notices.data && (
+            <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+              <span className="inline-flex items-center gap-2 font-medium text-ink">
+                <span className="new-dot inline-block size-2 rounded-full" aria-hidden="true" />
+                {t('home.stats', { n: notices.data.totalItems.toLocaleString(lang) })}
+              </span>
+              {status.data?.lastUpdatedAt && (
+                <span>
+                  {t('footer.updated', {
+                    time: timeAgo(status.data.lastUpdatedAt, new Date(status.dataUpdatedAt), lang),
+                  })}
+                </span>
+              )}
+            </p>
+          )}
+        </section>
+      )}
+
       <SearchBox value={q} onSearch={(value) => update({ q: value || null, page: null })} />
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label={t('list.filterLabel')}>
+      <div
+        className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        role="group"
+        aria-label={t('list.filterLabel')}
+      >
         <CategoryChip label={t('list.all')} selected={!category} onClick={() => update({ category: null, page: null })} />
-        {categories.data?.map((c) => (
+        {sortCategories(categories.data ?? []).map((c) => (
           <CategoryChip
             key={c}
+            category={c}
             label={categoryName(c, lang)}
             sublabel={lang === 'ko' ? undefined : c}
             selected={category === c}
@@ -52,24 +88,21 @@ export default function NoticeListPage() {
       {notices.isPending ? (
         <ListSkeleton />
       ) : notices.isError ? (
-        <div className="rounded-lg border border-line bg-surface p-6 text-center">
-          <p className="font-medium">{t('list.loadError')}</p>
-          <p className="mt-1 text-sm text-ink-2">{t('list.loadErrorHint')}</p>
-          <button
-            onClick={() => notices.refetch()}
-            className="mt-4 rounded-md bg-accent px-4 py-2 text-sm font-medium text-surface"
-          >
-            {t('common.tryAgain')}
-          </button>
-        </div>
+        <StatusCard
+          kind="error"
+          title={t('list.loadError')}
+          hint={t('list.loadErrorHint')}
+          action={
+            <button onClick={() => notices.refetch()} className="btn-primary mt-5 rounded-full px-5 py-2 text-sm font-medium">
+              {t('common.tryAgain')}
+            </button>
+          }
+        />
       ) : notices.data.items.length === 0 ? (
-        <div className="rounded-lg border border-line bg-surface p-8 text-center">
-          <p className="font-medium">{t('list.empty')}</p>
-          <p className="mt-1 text-sm text-ink-2">{t('list.emptyHint')}</p>
-        </div>
+        <StatusCard kind="empty" title={t('list.empty')} hint={t('list.emptyHint')} />
       ) : (
         <>
-          <p className="text-sm text-muted" aria-live="polite">
+          <p className={landing ? 'sr-only' : 'text-sm text-muted'} aria-live="polite">
             {t(notices.data.totalItems === 1 ? 'list.count.one' : 'list.count.other', {
               n: notices.data.totalItems.toLocaleString(lang),
             })}
@@ -126,37 +159,69 @@ function SearchBox({ value, onSearch }: { value: string; onSearch: (value: strin
     return () => clearTimeout(timer)
   }, [text, value])
 
+  // "/" jumps to the search box from anywhere on the page, like on GitHub or YouTube
+  const input = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return
+      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return
+      e.preventDefault()
+      input.current?.focus()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   return (
-    <div>
+    <div className="search-field flex items-center gap-3 px-4">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-5 shrink-0 text-muted" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
       <label htmlFor="search" className="sr-only">
         {t('list.searchLabel')}
       </label>
       <input
+        ref={input}
         id="search"
         type="search"
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder={t('list.searchPlaceholder')}
-        className="w-full rounded-lg border border-line bg-surface px-4 py-3 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
+        className="min-w-0 flex-1 bg-transparent py-3.5 text-base text-ink placeholder:text-muted focus:outline-none"
       />
+      {!text && (
+        <kbd className="kbd hidden sm:inline-block" aria-hidden="true">
+          /
+        </kbd>
+      )}
     </div>
   )
 }
 
-export function CategoryChip(props: { label: string; sublabel?: string; selected: boolean; onClick: () => void }) {
+export function CategoryChip(props: {
+  label: string
+  sublabel?: string
+  category?: string
+  selected: boolean
+  onClick: () => void
+}) {
   return (
     <button
       onClick={props.onClick}
       aria-pressed={props.selected}
-      className={`rounded-full border px-3 py-1.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
-        props.selected
-          ? 'border-accent bg-accent text-surface'
-          : 'border-line bg-surface text-ink-2 hover:border-accent hover:text-ink'
-      }`}
+      style={props.category ? categoryVars(props.category) : ({ '--c': 'var(--accent)' } as CSSProperties)}
+      className="cat-chip inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm whitespace-nowrap transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
     >
+      {props.category ? (
+        <CategoryIcon category={props.category} className="size-3.5" />
+      ) : (
+        <span className="cat-dot size-1.5 rounded-full" aria-hidden="true" />
+      )}
       {props.label}
       {props.sublabel && props.sublabel !== props.label && (
-        <span className={`ml-1.5 text-xs ${props.selected ? 'opacity-80' : 'text-muted'}`}>{props.sublabel}</span>
+        <span className={`text-xs ${props.selected ? 'opacity-80' : 'text-muted'}`}>{props.sublabel}</span>
       )}
     </button>
   )
@@ -165,50 +230,83 @@ export function CategoryChip(props: { label: string; sublabel?: string; selected
 export function NoticeRow({ notice, query }: { notice: NoticeItem; query?: string }) {
   const { lang, t } = useI18n()
   const due = dueLabel(notice.deadline, undefined, lang)
+  // Claude's English title when there is one, otherwise a machine translation (English interface only)
+  const machineTitle = useEnglish(notice.titleEn ? null : notice.title)
+  const titleEn = notice.titleEn ?? machineTitle
+  const department = useEnglish(notice.department) ?? notice.department
   // the reader's language first; the other one underneath
-  const main = lang === 'ko' || !notice.titleEn ? notice.title : notice.titleEn
-  const second = !notice.titleEn ? null : lang === 'ko' ? notice.titleEn : notice.title
+  const main = lang === 'ko' || !titleEn ? notice.title : titleEn
+  const second = !titleEn ? null : lang === 'ko' ? titleEn : notice.title
+  const [today] = useState(() => kstDate(new Date()))
+  const isNew = notice.postedOn === today
   return (
     <li>
       <Link
         to={`/notices/${notice.id}`}
-        className="block px-4 py-3.5 transition-colors hover:bg-bg focus:bg-bg focus:outline-none"
+        style={categoryVars(notice.category)}
+        className="notice-row flex items-start gap-3.5 px-4 py-4 transition-colors focus:outline-none focus-visible:bg-accent-soft/50 sm:px-5"
       >
-        <div className="flex items-start gap-2">
-          {notice.pinned && (
-            <span className="mt-0.5 shrink-0 rounded bg-pin-soft px-1.5 py-0.5 text-xs font-medium text-pin">
-              {t('list.pinned')}
-            </span>
-          )}
-          <div className="min-w-0">
-            <span lang={main === notice.title ? 'ko' : 'en'} className="font-medium leading-snug text-ink">
-              <Highlight text={main} query={query} />
-            </span>
-            {second && (
-              <span lang={second === notice.title ? 'ko' : 'en'} className="mt-0.5 block text-sm leading-snug text-ink-2">
-                <Highlight text={second} query={query} />
+        <span className="cat-tile mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl" title={categoryName(notice.category, lang)}>
+          <CategoryIcon category={notice.category} className="size-[18px]" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-2">
+            {notice.pinned && (
+              <span className="mt-0.5 shrink-0 rounded-md bg-pin-soft px-1.5 py-0.5 text-xs font-medium text-pin">
+                {t('list.pinned')}
               </span>
             )}
+            <div className="min-w-0">
+              <span lang={main === notice.title ? 'ko' : 'en'} className="font-medium leading-snug text-ink">
+                <Highlight text={main} query={query} />
+              </span>
+              {second && (
+                <span lang={second === notice.title ? 'ko' : 'en'} className="mt-0.5 block text-sm leading-snug text-ink-2">
+                  <Highlight text={second} query={query} />
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
+            {due && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-due-soft px-1.5 py-0.5 text-xs font-medium text-due">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="size-3" aria-hidden="true">
+                  <circle cx="12" cy="13" r="8" />
+                  <path d="M12 9v4l2.5 2M9 2.5h6" />
+                </svg>
+                {due}
+              </span>
+            )}
+            {notice.editedAt && (
+              <span className="rounded-md border border-line px-1.5 py-0.5 text-xs font-medium text-ink-2">
+                {t('list.edited')}
+              </span>
+            )}
+            <span className="cat-text font-medium">{categoryName(notice.category, lang)}</span>
+            {department && (
+              <>
+                <span aria-hidden>·</span>
+                <span lang={department === notice.department ? 'ko' : 'en'}>{department}</span>
+              </>
+            )}
+            <span aria-hidden className="sm:hidden">
+              ·
+            </span>
+            <time dateTime={notice.postedOn} className="sm:hidden">
+              {postedLabel(notice.postedOn, undefined, lang)}
+            </time>
           </div>
         </div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-          {due && (
-            <span className="rounded bg-due-soft px-1.5 py-0.5 text-xs font-medium text-due">{due}</span>
-          )}
-          {notice.editedAt && (
-            <span className="rounded border border-line px-1.5 py-0.5 text-xs font-medium text-ink-2">
-              {t('list.edited')}
+        <div className="hidden shrink-0 flex-col items-end gap-1.5 pt-0.5 text-right sm:flex">
+          <time dateTime={notice.postedOn} className="text-[13px] whitespace-nowrap text-muted">
+            {postedLabel(notice.postedOn, undefined, lang)}
+          </time>
+          {isNew && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent">
+              <span className="new-dot size-1.5 rounded-full" aria-hidden="true" />
+              {t('list.new')}
             </span>
           )}
-          <span className="text-accent">{categoryName(notice.category, lang)}</span>
-          {notice.department && (
-            <>
-              <span aria-hidden>·</span>
-              <span lang="ko">{notice.department}</span>
-            </>
-          )}
-          <span aria-hidden>·</span>
-          <time dateTime={notice.postedOn}>{postedLabel(notice.postedOn, undefined, lang)}</time>
         </div>
       </Link>
     </li>
@@ -240,9 +338,12 @@ function ListSkeleton() {
   return (
     <ul className="divide-y divide-line rounded-lg border border-line bg-surface" aria-label={t('list.loading')}>
       {Array.from({ length: 6 }, (_, i) => (
-        <li key={i} className="space-y-2 px-4 py-4">
-          <div className="h-4 w-3/4 animate-pulse rounded bg-line" />
-          <div className="h-3 w-1/3 animate-pulse rounded bg-line" />
+        <li key={i} className="flex gap-3.5 px-4 py-4 sm:px-5">
+          <div className="size-10 shrink-0 animate-pulse rounded-xl bg-line" />
+          <div className="flex-1 space-y-2.5 pt-1">
+            <div className="h-4 animate-pulse rounded bg-line" style={{ width: `${70 - (i % 3) * 12}%` }} />
+            <div className="h-3 w-1/3 animate-pulse rounded bg-line" />
+          </div>
         </li>
       ))}
     </ul>
