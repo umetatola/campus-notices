@@ -9,6 +9,7 @@ import { CategoryIcon } from '../CategoryIcon'
 import { StatusCard } from '../StatusCard'
 import { useI18n } from '../i18n'
 import { useEnglish } from '../translate'
+import { useIsRead } from '../readNotices'
 
 const PAGE_SIZE = 20
 
@@ -239,6 +240,8 @@ export function NoticeRow({ notice, query }: { notice: NoticeItem; query?: strin
   const second = !titleEn ? null : lang === 'ko' ? titleEn : notice.title
   const [today] = useState(() => kstDate(new Date()))
   const isNew = notice.postedOn === today
+  // notices not opened yet on this device stand out in bold; opening one makes it normal weight
+  const read = useIsRead(notice.id)
   return (
     <li>
       <Link
@@ -257,7 +260,12 @@ export function NoticeRow({ notice, query }: { notice: NoticeItem; query?: strin
               </span>
             )}
             <div className="min-w-0">
-              <span lang={main === notice.title ? 'ko' : 'en'} className="font-medium leading-snug text-ink">
+              {!read && <span className="sr-only">{t('list.unread')}: </span>}
+              <span
+                lang={main === notice.title ? 'ko' : 'en'}
+                data-read={read}
+                className={`leading-snug text-ink ${read ? 'font-normal' : 'font-bold'}`}
+              >
                 <Highlight text={main} query={query} />
               </span>
               {second && (

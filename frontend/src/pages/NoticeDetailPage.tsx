@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router'
 import DOMPurify from 'dompurify'
@@ -11,6 +11,7 @@ import NotFoundPage from './NotFoundPage'
 import { NoticeRow } from './NoticeListPage'
 import { translate, useI18n, type Lang } from '../i18n'
 import { useEnglish, useTranslation } from '../translate'
+import { markRead } from '../readNotices'
 
 export default function NoticeDetailPage() {
   const { id } = useParams()
@@ -22,6 +23,12 @@ export default function NoticeDetailPage() {
     queryFn: () => fetchNotice(noticeId),
     enabled: Number.isInteger(noticeId),
   })
+
+  // opening a notice marks it read, so it shows in normal weight in the lists afterwards
+  const loadedId = notice.data?.id
+  useEffect(() => {
+    if (loadedId !== undefined) markRead(loadedId)
+  }, [loadedId])
 
   const rawHtml = notice.data?.bodyHtml
   // Image-only notices are common and their images rarely have alt text; give each one a name for screen readers.
