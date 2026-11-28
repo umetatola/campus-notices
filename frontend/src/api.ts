@@ -252,6 +252,16 @@ export function removeBookmark(noticeId: number) {
   return send<void>('DELETE', `/api/bookmarks/${noticeId}`)
 }
 
+/** Ids of the notices the signed-in user has opened on any device, most recent first. */
+export function fetchReads() {
+  return getJson<number[]>('/api/reads')
+}
+
+/** Up to 500 ids per call; unknown ids and ones already read are ignored by the server. */
+export function sendReads(ids: number[]) {
+  return send<void>('POST', '/api/reads', { ids })
+}
+
 export type AlertFrequency = 'INSTANT' | 'DAILY'
 
 export interface AlertStatus {

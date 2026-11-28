@@ -1,14 +1,21 @@
 // Which notices this device has opened, so the lists can show unread ones in bold. Kept in localStorage like the
 // other per-device preferences; when storage is unavailable it still works for the session, it just isn't remembered.
-import { useSyncExternalStore } from 'react'
+// Signed in, the list is also kept on the server (/api/reads), so it follows the user to their other devices.
+import { useEffect, useSyncExternalStore } from 'react'
+import { fetchReads, sendReads } from './api'
+import { useMe } from './useMe'
 
 const KEY = 'cn-read'
-// enough for months of notices; the oldest ids drop off first
+// enough for months of notices; the oldest ids drop off first (the server keeps the same number)
 const LIMIT = 3000
+// the server takes this many ids per request
+const BATCH = 500
 
 let ids: number[] | null = null
 let set = new Set<number>()
 const listeners = new Set<() => void>()
+// the signed-in user whose reads are being kept on the server, or null
+let syncedUser: string | null = null
 
 function load(): number[] {
   if (ids) return ids
@@ -40,7 +47,12 @@ export function markAllRead(newIds: readonly number[]) {
   const current = load()
   const added = [...new Set(newIds)].filter((id) => !set.has(id))
   if (added.length === 0) return
-  ids = [...current, ...added].slice(-LIMIT)
+  remember([...current, ...added])
+  if (syncedUser !== null) upload(added)
+}
+
+function remember(next: number[]) {
+  ids = next.slice(-LIMIT)
   set = new Set(ids)
   try {
     localStorage.setItem(KEY, JSON.stringify(ids))
@@ -48,6 +60,50 @@ export function markAllRead(newIds: readonly number[]) {
     // not remembered; fine
   }
   emit()
+}
+
+/** Best effort: a failed upload is sent again with the rest of the local list on the next sign-in or reload. */
+function upload(toSend: number[]) {
+  for (let i = 0; i < toSend.length; i += BATCH) {
+    sendReads(toSend.slice(i, i + BATCH)).catch(() => {})
+  }
+}
+
+/**
+ * Starts keeping reads on the server for this user: adds what other devices read to this one, then sends what this
+ * device read while signed out. Safe to call again; it runs once per user.
+ */
+export async function startSync(userId: string) {
+  if (syncedUser === userId) return
+  syncedUser = userId
+  let server: number[]
+  try {
+    server = await fetchReads()
+  } catch {
+    return // offline or signed out meanwhile; local reading still works, and the next load tries again
+  }
+  if (syncedUser !== userId) return
+  const onServer = new Set(server)
+  const local = load()
+  // the server's list is newest first; anything new to this device goes before the local reads
+  const fromServer = server.filter((id) => !set.has(id)).reverse()
+  if (fromServer.length > 0) remember([...fromServer, ...local])
+  upload(local.filter((id) => !onServer.has(id)))
+}
+
+/** Signed out: keep the local list, stop sending to the server. */
+export function stopSync() {
+  syncedUser = null
+}
+
+/** Keeps the signed-in user's reads in step with the server; mount once, in the app layout. */
+export function useReadSync() {
+  const me = useMe()
+  const userId = me?.email
+  useEffect(() => {
+    if (userId !== undefined) void startSync(userId)
+    else if (me === null) stopSync()
+  }, [userId, me])
 }
 
 function subscribe(listener: () => void) {
@@ -79,4 +135,5 @@ export function useUnreadCount(noticeIds: readonly number[]): number {
 export function resetReadCache() {
   ids = null
   set = new Set()
+  syncedUser = null
 }

@@ -4,6 +4,7 @@ import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate } fr
 import { fetchDesktopSettings, fetchStatus, signOut } from '../api'
 import { timeAgo } from '../labels'
 import { useMe } from '../useMe'
+import { useReadSync } from '../readNotices'
 import { useWide } from '../useWide'
 import { useI18n } from '../i18n'
 import { useHistoryNav, useStandaloneWindow } from '../useHistoryNav'
@@ -88,6 +89,8 @@ function TabBar({ signedIn }: { signedIn: boolean }) {
 
 export default function Layout() {
   const me = useMe()
+  // signed in, the bold "unread" titles agree across the user's devices
+  useReadSync()
   const { lang, setLang, t } = useI18n()
   const location = useLocation()
   const standalone = useStandaloneWindow()
