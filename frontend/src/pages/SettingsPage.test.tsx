@@ -50,7 +50,8 @@ describe('SettingsPage', () => {
     // the page checks once a second until a copy with a newer start time answers
     expect(await screen.findByText(/^On: new notices get/, {}, { timeout: 3000 })).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
-  })
+    // real 1 s restart checks: about 2 s alone, more when the whole suite runs in parallel
+  }, 15_000)
 
   it('shows why a key was refused', async () => {
     mockApi({
