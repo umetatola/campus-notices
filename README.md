@@ -30,6 +30,8 @@ title and summary, and emails you when a notice matches the keywords you follow.
 - **Deadlines** page: everything due in the next 2 weeks or 30 days, soonest first
 - **Edited** badge when the university changes a notice after posting it; the summary is rewritten
 - **Saved** notices, and "more from this office" on every notice page
+- Unread notices in **bold**, with an unread count and **Mark all as read**; signed in, read notices follow you
+  across devices
 - **Keyword alerts** by email, as they come or as one daily digest after 08:00 KST, with one-click unsubscribe
 - Korean / English interface, dark mode, works on phones and can be installed like an app; Atom feeds for any search
 
@@ -130,6 +132,8 @@ Interactive documentation (Swagger UI) is served at `/api/docs`, generated from 
 | DELETE | `/api/subscriptions/{id}` | Stop following a keyword |
 | GET | `/api/bookmarks` | Saved notices, newest first (signed in) |
 | PUT/DELETE | `/api/bookmarks/{noticeId}` | Save or unsave a notice (idempotent, up to 200) |
+| GET | `/api/reads` | Ids of the notices the user has opened, newest first (signed in) |
+| POST | `/api/reads` | Mark up to 500 notices read: `{"ids":[…]}` (idempotent, unknown ids ignored, 3000 kept) |
 | POST | `/api/alerts/unsubscribe?token=` | Pause alert emails (one-click, from the email link; no session needed) |
 | GET | `/api/alerts/status` | Whether alerts are paused (signed in) |
 | POST | `/api/alerts/resume` | Turn alerts back on (signed in) |
