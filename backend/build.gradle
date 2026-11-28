@@ -47,6 +47,60 @@ tasks.named('test') {
 	finalizedBy 'jacocoTestReport'
 }
 
+// Windows desktop app: the same server plus a private PostgreSQL, shown in its own window (src/desktop).
+// Kept out of bootJar, so the server image doesn't change. Build and install with desktop/install.ps1.
+sourceSets {
+	desktop {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+}
+
+configurations {
+	desktopImplementation.extendsFrom implementation
+	desktopRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+	desktopImplementation('io.zonky.test:embedded-postgres:2.2.2') {
+		exclude group: 'io.zonky.test.postgres'
+	}
+	desktopRuntimeOnly 'io.zonky.test.postgres:embedded-postgres-binaries-windows-amd64:17.11.0'
+}
+
+tasks.named('processDesktopResources') {
+	from('../frontend/dist') { into 'static' }
+}
+
+def desktopJar = tasks.register('desktopJar', Jar) {
+	archiveBaseName = 'campus-notices-desktop'
+	from sourceSets.desktop.output
+}
+
+def desktopInput = tasks.register('desktopInput', Sync) {
+	from tasks.named('jar')
+	from desktopJar
+	from configurations.desktopRuntimeClasspath
+	into layout.buildDirectory.dir('desktop/input')
+}
+
+tasks.register('desktopImage', Exec) {
+	dependsOn desktopInput
+	def dest = layout.buildDirectory.dir('desktop/image').get().asFile
+	def jdk = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+	doFirst {
+		delete dest
+		executable = "${jdk.get().metadata.installationPath}/bin/jpackage"
+	}
+	args '--type', 'app-image', '--name', 'Campus Notices', '--app-version', version,
+			'--input', desktopInput.get().destinationDir,
+			'--main-jar', "campus-notices-desktop-${version}.jar",
+			'--main-class', 'com.campusnotices.desktop.DesktopLauncher',
+			'--icon', file('../desktop/campus-notices.ico'),
+			'--java-options', '-Xmx512m',
+			'--dest', dest
+}
+
 // Coverage report after every test run: build/reports/jacoco/test/html (CI also writes a summary table)
 tasks.named('jacocoTestReport') {
 	reports {

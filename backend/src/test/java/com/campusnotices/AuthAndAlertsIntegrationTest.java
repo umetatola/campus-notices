@@ -194,6 +194,36 @@ class AuthAndAlertsIntegrationTest {
 	}
 
 	@Test
+	void readNoticesFollowTheUserAcrossDevices() {
+		MockHttpSession laptop = signIn("frank@ajou.ac.kr");
+		MockHttpSession phone = signIn("frank@ajou.ac.kr");
+		MockHttpSession grace = signIn("grace@ajou.ac.kr");
+		Notice first = save("rd-1", "수강신청 안내", "courses");
+		Notice second = save("rd-2", "졸업 사정 안내", "graduation");
+
+		// the laptop opens both, sends one twice, and a stale id that isn't a notice
+		assertThat(mvc.post().uri("/api/reads").session(laptop).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"ids\":[" + first.getId() + "," + first.getId() + ",999999]}")).hasStatus(204);
+		assertThat(mvc.post().uri("/api/reads").session(laptop).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"ids\":[" + second.getId() + "]}")).hasStatus(204);
+		assertThat(mvc.post().uri("/api/reads").session(laptop).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"ids\":[]}")).hasStatus(204);
+
+		// the phone, signed in as the same person, sees both; someone else sees none
+		assertThat(mvc.get().uri("/api/reads").session(phone)).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$", v -> v.assertThat().asList()
+						.containsExactlyInAnyOrder(first.getId().intValue(), second.getId().intValue()));
+		assertThat(mvc.get().uri("/api/reads").session(grace)).hasStatusOk().bodyJson()
+				.hasPathSatisfying("$.length()", v -> v.assertThat().isEqualTo(0));
+
+		assertThat(mvc.post().uri("/api/reads").session(laptop).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+				.content("{}")).hasStatus(400);
+		assertThat(mvc.get().uri("/api/reads")).hasStatus(401);
+		assertThat(mvc.post().uri("/api/reads").session(laptop).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"ids\":[]}")).hasStatus(403); // no CSRF token
+	}
+
+	@Test
 	void matchingNoticesAreEmailedOnceInOneDigest() {
 		// a notice from before the user followed anything never triggers an alert
 		Notice old = save("800001", "[장학] 오래된 장학금 안내", "지난 공지");

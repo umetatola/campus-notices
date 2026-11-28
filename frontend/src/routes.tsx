@@ -19,6 +19,8 @@ export const routes: RouteObject[] = [
       { path: '/alerts', lazy: page(() => import('./pages/AlertsPage')) },
       { path: '/saved', lazy: page(() => import('./pages/SavedPage')) },
       { path: '/unsubscribe', lazy: page(() => import('./pages/UnsubscribePage')) },
+      { path: '/settings', lazy: page(() => import('./pages/SettingsPage')) },
+      { path: '/ask', lazy: page(() => import('./pages/AskPage')) },
       { path: '*', lazy: page(() => import('./pages/NotFoundPage')) },
     ],
   },

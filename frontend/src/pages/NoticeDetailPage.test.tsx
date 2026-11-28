@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { cleanup, screen, waitFor } from '@testing-library/react'
+import { isRead, resetReadCache } from '../readNotices'
 import userEvent from '@testing-library/user-event'
 import NoticeDetailPage from './NoticeDetailPage'
 import { json, mockApi, renderPage } from '../test/helpers'
@@ -52,6 +53,22 @@ describe('NoticeDetailPage', () => {
     const edited = await screen.findByText('Edited Oct 13')
     expect(edited).toHaveAttribute('dateTime', '2026-10-12T16:30:00Z')
     expect(edited).toHaveAttribute('title', expect.stringContaining('changed this notice'))
+  })
+
+  it('marks the notice read once it has loaded, but not a missing one', async () => {
+    localStorage.clear()
+    resetReadCache()
+    show(null)
+    await screen.findByRole('heading', { level: 1 })
+    expect(isRead(7)).toBe(false)
+    cleanup()
+
+    show(detail())
+    await screen.findByRole('heading', { level: 1, name: 'Course withdrawal period' })
+    expect(isRead(7)).toBe(true)
+    expect(localStorage.getItem('cn-read')).toBe('[7]')
+    localStorage.clear()
+    resetReadCache()
   })
 
   it('shows no edit mark for an unedited notice', async () => {

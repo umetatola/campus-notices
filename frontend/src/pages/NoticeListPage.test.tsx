@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
+import { markRead, resetReadCache } from '../readNotices'
 import userEvent from '@testing-library/user-event'
 import NoticeListPage from './NoticeListPage'
 import { json, mockApi, renderPage } from '../test/helpers'
@@ -117,6 +118,60 @@ describe('NoticeListPage', () => {
     fail = false
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
     expect(await screen.findByText('Fall scholarship applications')).toBeInTheDocument()
+  })
+
+  it('shows unread notices in bold and opened ones in normal weight', async () => {
+    localStorage.setItem('cn-read', JSON.stringify([2]))
+    resetReadCache()
+    api(() => page([notice({}), notice({ id: 2, title: '도서관 휴관 안내', titleEn: null })]))
+    renderPage(<NoticeListPage />)
+
+    const unread = await screen.findByText('Fall scholarship applications')
+    expect(unread).toHaveClass('font-bold')
+    expect(screen.getByText('도서관 휴관 안내')).toHaveClass('font-normal')
+    // screen readers hear it too
+    expect(screen.getByRole('link', { name: /Unread:\s*Fall scholarship/ })).toBeInTheDocument()
+
+    // opening notice 1 elsewhere (the detail page) turns its row normal without a reload
+    act(() => markRead(1))
+    expect(screen.getByText('Fall scholarship applications')).toHaveClass('font-normal')
+    expect(screen.queryByText(/^Unread/)).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('cn-read')!)).toEqual([2, 1])
+    localStorage.clear()
+    resetReadCache()
+  })
+
+  it('counts unread notices on the page and marks them all read in one click', async () => {
+    localStorage.setItem('cn-read', JSON.stringify([2]))
+    resetReadCache()
+    api(() =>
+      page([notice({}), notice({ id: 2, title: '도서관 휴관 안내', titleEn: null }), notice({ id: 3, titleEn: 'Dorm move-out' })]),
+    )
+    renderPage(<NoticeListPage />)
+
+    expect(await screen.findByText('2 unread on this page')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Mark all as read' }))
+
+    expect(screen.getByText('Fall scholarship applications')).toHaveClass('font-normal')
+    expect(screen.getByText('Dorm move-out')).toHaveClass('font-normal')
+    // the bar goes away once nothing is left unread
+    expect(screen.queryByText(/unread on this page/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mark all as read' })).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('cn-read')!)).toEqual([2, 1, 3])
+    localStorage.clear()
+    resetReadCache()
+  })
+
+  it('shows no unread bar when everything on the page has been read', async () => {
+    localStorage.setItem('cn-read', JSON.stringify([1]))
+    resetReadCache()
+    api(() => page([notice({})]))
+    renderPage(<NoticeListPage />)
+
+    await screen.findByText('Fall scholarship applications')
+    expect(screen.queryByRole('button', { name: 'Mark all as read' })).not.toBeInTheDocument()
+    localStorage.clear()
+    resetReadCache()
   })
 
   it('puts the Korean title first in Korean mode', async () => {

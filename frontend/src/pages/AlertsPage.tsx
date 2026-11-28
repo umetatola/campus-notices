@@ -14,6 +14,7 @@ import {
 } from '../api'
 import { useMe } from '../useMe'
 import { useI18n } from '../i18n'
+import { PageHeader } from '../PageHeader'
 
 const SUGGESTIONS = ['scholarship', '장학', 'dorm', '기숙사', 'internship', 'visa', 'graduation', '수강']
 const MAX_KEYWORDS = 20
@@ -77,14 +78,13 @@ export default function AlertsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">{t('alerts.title')}</h1>
-        <p className="text-ink-2">
+      <PageHeader icon="alerts" title={t('alerts.title')}>
+        <p>
           {t('alerts.introBefore')}
           <span className="font-medium text-ink">{me.email}</span>
           {t('alerts.introAfter')}
         </p>
-      </div>
+      </PageHeader>
 
       {status.data?.paused && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-due/40 bg-due-soft px-4 py-3">
@@ -94,13 +94,14 @@ export default function AlertsPage() {
           <button
             onClick={() => resume.mutate()}
             disabled={resume.isPending}
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-surface disabled:opacity-60"
+            className="btn-primary rounded-full px-4 py-1.5 text-sm font-medium"
           >
             {t('alerts.resume')}
           </button>
         </div>
       )}
 
+      <section className="card space-y-5 p-5 hover:transform-none sm:p-6">
       <form
         className="flex gap-2"
         onSubmit={(e) => {
@@ -118,18 +119,18 @@ export default function AlertsPage() {
           disabled={full}
           onChange={(e) => setKeyword(e.target.value)}
           placeholder={full ? t('alerts.full', { max: MAX_KEYWORDS }) : t('alerts.placeholder')}
-          className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-4 py-2.5 placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
+          className="min-w-0 flex-1 rounded-xl border border-line bg-bg px-4 py-2.5 placeholder:text-muted focus:border-accent focus:bg-surface focus:outline-none focus:ring-4 focus:ring-accent/15"
         />
         <button
           type="submit"
           disabled={full || add.isPending || !keyword.trim()}
-          className="shrink-0 rounded-lg bg-accent px-4 py-2.5 font-medium text-surface disabled:opacity-50"
+          className="btn-primary shrink-0 rounded-xl px-5 py-2.5 font-medium"
         >
           {t('alerts.follow')}
         </button>
       </form>
       {add.isError && (
-        <p role="alert" className="-mt-4 text-sm text-due">
+        <p role="alert" className="-mt-3 text-sm text-due">
           {add.error.message}
         </p>
       )}
@@ -163,38 +164,57 @@ export default function AlertsPage() {
       </div>
 
       {list.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-line p-6 text-center text-ink-2">
-          {t('alerts.none')}
-        </div>
+        <p className="rounded-xl border border-dashed border-line px-4 py-5 text-center text-sm text-ink-2">{t('alerts.none')}</p>
       ) : (
         <ul className="flex flex-wrap gap-2" aria-label={t('alerts.listLabel')}>
           {list.map((s) => (
             <li
               key={s.id}
-              className="flex items-center gap-1 rounded-full border border-accent bg-accent-soft py-1 pr-1 pl-3 text-sm"
+              className="flex items-center gap-1 rounded-full bg-accent-soft py-1 pr-1 pl-3 text-sm font-medium text-accent ring-1 ring-accent/30"
             >
               <span>{s.keyword}</span>
               <button
                 onClick={() => remove.mutate(s.id)}
                 aria-label={t('alerts.unfollow', { keyword: s.keyword })}
-                className="rounded-full px-2 text-muted hover:bg-surface hover:text-ink"
+                className="grid size-6 place-items-center rounded-full text-accent/70 transition hover:bg-surface hover:text-due"
               >
-                ×
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="size-3" aria-hidden="true">
+                  <path d="m5 5 10 10M15 5 5 15" />
+                </svg>
               </button>
             </li>
           ))}
         </ul>
       )}
 
+      <div className="space-y-2 border-t border-line pt-4">
+        <h2 className="text-sm font-semibold text-ink-2">{t('alerts.suggestions')}</h2>
+        <div className="flex flex-wrap gap-2">
+          {SUGGESTIONS.filter((k) => !followed.has(k.toLowerCase())).map((k) => (
+            <button
+              key={k}
+              disabled={full || add.isPending}
+              onClick={() => add.mutate(k)}
+              className="rounded-full border border-dashed border-line bg-surface px-3 py-1 text-sm text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-50"
+            >
+              + {k}
+            </button>
+          ))}
+        </div>
+      </div>
+      </section>
+
       {status.data && (
         <fieldset className="space-y-2">
           <legend className="text-sm font-semibold text-ink-2">{t('alerts.frequency')}</legend>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {(['INSTANT', 'DAILY'] as AlertFrequency[]).map((f) => (
               <label
                 key={f}
-                className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
-                  status.data.frequency === f ? 'border-accent bg-accent-soft' : 'border-line bg-surface'
+                className={`flex cursor-pointer items-start gap-2.5 rounded-xl border px-4 py-3 text-sm transition ${
+                  status.data.frequency === f
+                    ? 'border-accent bg-accent-soft ring-1 ring-accent/40'
+                    : 'border-line bg-surface hover:border-accent/50'
                 }`}
               >
                 <input
@@ -220,22 +240,6 @@ export default function AlertsPage() {
           )}
         </fieldset>
       )}
-
-      <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-ink-2">{t('alerts.suggestions')}</h2>
-        <div className="flex flex-wrap gap-2">
-          {SUGGESTIONS.filter((k) => !followed.has(k.toLowerCase())).map((k) => (
-            <button
-              key={k}
-              disabled={full || add.isPending}
-              onClick={() => add.mutate(k)}
-              className="rounded-full border border-line bg-surface px-3 py-1 text-sm text-ink-2 hover:border-accent hover:text-ink disabled:opacity-50"
-            >
-              + {k}
-            </button>
-          ))}
-        </div>
-      </div>
 
       <p className="text-xs text-muted">
         {t('alerts.footnote')}
