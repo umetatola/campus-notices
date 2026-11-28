@@ -32,9 +32,15 @@ export function isRead(id: number): boolean {
 }
 
 export function markRead(id: number) {
+  markAllRead([id])
+}
+
+/** Marks several notices read at once (the "Mark all as read" button), with one save and one re-render. */
+export function markAllRead(newIds: readonly number[]) {
   const current = load()
-  if (set.has(id)) return
-  ids = [...current, id].slice(-LIMIT)
+  const added = [...new Set(newIds)].filter((id) => !set.has(id))
+  if (added.length === 0) return
+  ids = [...current, ...added].slice(-LIMIT)
   set = new Set(ids)
   try {
     localStorage.setItem(KEY, JSON.stringify(ids))
@@ -62,6 +68,11 @@ function subscribe(listener: () => void) {
 /** True once this device has opened the notice; re-renders when that changes. */
 export function useIsRead(id: number): boolean {
   return useSyncExternalStore(subscribe, () => isRead(id))
+}
+
+/** How many of these notices this device hasn't opened yet; re-renders when that changes. */
+export function useUnreadCount(noticeIds: readonly number[]): number {
+  return useSyncExternalStore(subscribe, () => noticeIds.filter((id) => !isRead(id)).length)
 }
 
 /** For tests: forget the in-memory copy so the next read comes from localStorage. */

@@ -9,7 +9,7 @@ import { CategoryIcon } from '../CategoryIcon'
 import { StatusCard } from '../StatusCard'
 import { useI18n } from '../i18n'
 import { useEnglish } from '../translate'
-import { useIsRead } from '../readNotices'
+import { markAllRead, useIsRead, useUnreadCount } from '../readNotices'
 
 const PAGE_SIZE = 20
 
@@ -103,11 +103,14 @@ export default function NoticeListPage() {
         <StatusCard kind="empty" title={t('list.empty')} hint={t('list.emptyHint')} />
       ) : (
         <>
-          <p className={landing ? 'sr-only' : 'text-sm text-muted'} aria-live="polite">
-            {t(notices.data.totalItems === 1 ? 'list.count.one' : 'list.count.other', {
-              n: notices.data.totalItems.toLocaleString(lang),
-            })}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <p className={landing ? 'sr-only' : 'text-sm text-muted'} aria-live="polite">
+              {t(notices.data.totalItems === 1 ? 'list.count.one' : 'list.count.other', {
+                n: notices.data.totalItems.toLocaleString(lang),
+              })}
+            </p>
+            <UnreadBar ids={notices.data.items.map((n) => n.id)} />
+          </div>
           <ul
             className={`divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface ${
               notices.isPlaceholderData ? 'opacity-60' : ''
@@ -128,6 +131,26 @@ export default function NoticeListPage() {
         </>
       )}
     </div>
+  )
+}
+
+/** "3 unread on this page · Mark all as read"; hidden once everything on the page has been read. */
+function UnreadBar({ ids }: { ids: number[] }) {
+  const { lang, t } = useI18n()
+  const unread = useUnreadCount(ids)
+  if (unread === 0) return null
+  return (
+    <p className="ml-auto flex items-center gap-2 text-sm text-muted">
+      <span>{t(unread === 1 ? 'list.unreadCount.one' : 'list.unreadCount.other', { n: unread.toLocaleString(lang) })}</span>
+      <span aria-hidden>·</span>
+      <button
+        type="button"
+        onClick={() => markAllRead(ids)}
+        className="rounded font-medium text-accent hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+      >
+        {t('list.markAllRead')}
+      </button>
+    </p>
   )
 }
 
